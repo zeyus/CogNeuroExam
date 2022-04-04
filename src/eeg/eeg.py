@@ -19,7 +19,6 @@ class EEG(object):
       self._prepare_board()
     self.exg_channels = BoardShim.get_exg_channels(self.board_id)
     self.accel_channels = BoardShim.get_accel_channels(self.board_id)
-    BoardShim.get_emg_channels(2)
     self.sampling_rate = BoardShim.get_sampling_rate(self.board_id)
     self.window_size = 4
     self.num_points = self.window_size * self.sampling_rate
