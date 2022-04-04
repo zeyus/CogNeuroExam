@@ -105,6 +105,8 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
     """
     Collect brain data
     """
+
+    # get data file name
     file_out = str(
         config.data.DATA_PATH +
         os.path.sep +
@@ -113,25 +115,37 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
             id=participant[0],
             condition=condition.get('condition')))
     
+    # start collecting data from board
     streamer.start_stream()
     # MNE data
     sr = streamer.sampling_rate
     ch_types = config.exp.BCI_CHANNEL_TYPES
     ch_names = config.exp.BCI_CHANNEL_NAMES
+
+    # save metadata (i mean it's not necessary but it's nice in case someone else wants to use it)
     with open(file_out + '.header', 'w') as f:
         f.write('Sampling rate: {}\n'.format(sr))
         f.write('Channel types: {}\n'.format(ch_types))
         f.write('Channel names: {}\n'.format(ch_names))
+
     with open(file_out, 'w') as f:
+        # trigger ready signal for main thread to start experiment
         ready_event.set()
+
+        # stop after recieving stop signal from main thread (experiment is over)
         while not stop_event.is_set():
+            # sleep first for data in buffer
             time.sleep(1)
+            # get data from buffer
             bci_data = streamer.poll()
             if bci_data is not None:
+                # write data to file, with channels as columns, rows as samples
                 np.savetxt(f, bci_data.T, delimiter=',')
-
+    # shutdown board's data stream
     if streamer is not None:
         streamer.stop()
+    
+    # trigger ready event to let main thread know data has been saved
     ready_event.set()
 
 
@@ -155,13 +169,14 @@ def run_experiment():
     # Get the participants condition
     condition = get_condition()
 
-    # start recording brain data
+    # set up events for communicating with threads
     stop_event = threading.Event()
     ready_event = threading.Event()
+     # start recording brain data
     streamer = EEG(dummyBoard=True)
     thread_cont = threading.Thread(target = collect_cont, args = [streamer, stop_event, ready_event, participant, condition])
     thread_cont.start()
-    # wait for eeg recording
+    # wait for eeg recording to start
     while not ready_event.is_set():
         time.sleep(0.1)
 
@@ -187,12 +202,15 @@ def run_experiment():
     # finish up EEG recording
     streamer.tag(5)
     ready_event.clear()
+    # let thread know to stop recording
     stop_event.set()
+    # wait for thread to finish
     while not ready_event.is_set():
         time.sleep(0.1)
     # Byeeeeeeeee
     psypy.display_text_message(config.exp.MESSAGES.get('complete'))
 
+    # cleanup, garbage collection, etc
     del psypy
     shutdown_psychopy()
     
