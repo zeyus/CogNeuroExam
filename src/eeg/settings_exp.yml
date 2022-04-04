@@ -1,0 +1,41 @@
+# ==== settings_exp.yml ====
+
+# parameters for board and session
+args: 
+    timeout: 0
+    ip_address:
+    board_id: -1         # required! : 2 = cyton + daisy, -1 = synthetic board
+    serial_port: COM3   # Mac: /dev/cu.usbserial-DM00D7TW
+    streamer_params: file://data/OpenBCILSL:w # streaming_board://224.0.0.1:6666
+    name: obci_exp       # required!
+    data_type:          # required!
+        - EXG
+        #- AUX
+    channel_names: 
+        EXG: VEOG,Fz,C3,C4,P3,P4,O1,O2,9,10,11,12,13,14,15,16 # required if used!
+        EEG: VEOG,Fz,C3,C4,P3,P4,O1,O2,9,10,11,12,13,14,15,16 # required if used!
+        AUX: x,y,z      # required if used
+    uid: brainflow      # required!
+    daisy_attached: yes # yes- Daisy is physically attached to Cyton; no- no Daisy
+    max_time: 1800      # required! Max 30 min.; if unlimited time needed, -> 
+                        # use some huge number here e.g. 360000 (100h)
+    delay: 0
+
+# commands sent to board; if you use Daisy, uncomment channels 9-16
+commands: 
+    chan1: x1040100X    # +
+    chan2: x2060110X    # +
+    chan3: x3060110X    # +
+    chan4: x4060110X    # +
+    chan5: x5060110X    # +
+    chan6: x6060110X    # +
+    chan7: x7161000X    # -
+    chan8: x8161000X    # -
+    chan9: xQ060110X   # -
+    chan10: xW060110X  # -
+    chan11: xE060110X  # -
+    chan12: xR060110X  # -
+    chan13: xT060110X  # -
+    chan14: xY060110X  # -
+    chan15: xU060110X  # -
+    chan16: xI060110X  # -
