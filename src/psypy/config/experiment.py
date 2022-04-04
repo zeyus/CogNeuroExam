@@ -48,8 +48,9 @@ MESSAGES = {
 }
 
 # 14 eeg, 2 emg and 3 accel channels
-BCI_CHANNEL_TYPES = ['eeg'] * 14 + ['emg'] * 2 + ['AU'] * 3
+BCI_CHANNEL_TYPES = ['pk_num'] + ['eeg'] * 14 + ['emg'] * 2 + ['AU'] * 3 + ['marker']
 
 # BCI_CHANNEL_NAMES = ["Fp1,Fp2,C3,C4,P7,P8,O1,O2,F7,F8,F3,F4,T7,T8,P3,P4"]
-BCI_CHANNEL_NAMES = ["Fp1,Fp2,C3,C4,P7,P8,O1,O2,F7,F8,F3,F4,T7,T8,EMG1,EMG2,AX,AY,AZ"]
+BCI_CHANNEL_NAMES = ["pkg","Fp1","Fp2","C3","C4","P7","P8","O1","O2","F7","F8","F3","F4","T7","T8","EMG1","EMG2","AX","AY","AZ","marker"]
 
+BCI_CHANNEL_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 31]

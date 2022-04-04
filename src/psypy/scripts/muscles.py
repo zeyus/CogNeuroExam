@@ -121,6 +121,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
     sr = streamer.sampling_rate
     ch_types = config.exp.BCI_CHANNEL_TYPES
     ch_names = config.exp.BCI_CHANNEL_NAMES
+    ch_idx = config.exp.BCI_CHANNEL_INDEXES
 
     # save metadata (i mean it's not necessary but it's nice in case someone else wants to use it)
     with open(file_out + '.header', 'w') as f:
@@ -130,6 +131,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
 
     with open(file_out, 'w') as f:
         # trigger ready signal for main thread to start experiment
+        f.write(','.join(ch_names) + '\n')
         ready_event.set()
 
         # stop after recieving stop signal from main thread (experiment is over)
@@ -140,7 +142,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
             bci_data = streamer.poll()
             if bci_data is not None:
                 # write data to file, with channels as columns, rows as samples
-                np.savetxt(f, bci_data.T, delimiter=',')
+                np.savetxt(f, bci_data[ch_idx,:].T, delimiter=',')
     # shutdown board's data stream
     if streamer is not None:
         streamer.stop()
