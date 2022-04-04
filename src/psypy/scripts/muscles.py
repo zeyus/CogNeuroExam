@@ -11,7 +11,7 @@ import time
 from typing import List
 import pandas as pd
 import numpy as np
-from eeg.eeg import EEG
+from eeg.eeg import EEG, Filtering
 
 # Add src directory to path for module loading
 sys.path.append(os.path.abspath(os.path.dirname(
@@ -119,9 +119,13 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
     streamer.start_stream()
     # MNE data
     sr = streamer.sampling_rate
-    ch_types = config.exp.BCI_CHANNEL_TYPES
-    ch_names = config.exp.BCI_CHANNEL_NAMES
-    ch_idx = config.exp.BCI_CHANNEL_INDEXES
+    ch_types = config.data.BCI_CHANNEL_TYPES
+    ch_names = config.data.BCI_CHANNEL_NAMES
+    ch_idx = config.data.BCI_CHANNEL_INDEXES
+
+    if config.data.ENABLE_FIFTY_HZ_FILTER:
+        streamFilter = Filtering(streamer.exg_channels, sr)
+        filter_func = streamFilter.filter_50hz
 
     # save metadata (i mean it's not necessary but it's nice in case someone else wants to use it)
     with open(file_out + '.header', 'w') as f:
@@ -141,6 +145,8 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
             # get data from buffer
             bci_data = streamer.poll()
             if bci_data is not None:
+                if filter_func is not None:
+                    bci_data = filter_func(bci_data)
                 # write data to file, with channels as columns, rows as samples
                 np.savetxt(f, bci_data[ch_idx,:].T, delimiter=',')
     # shutdown board's data stream

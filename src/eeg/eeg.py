@@ -5,7 +5,7 @@ import numpy as np
 from scipy.signal import savgol_filter
 import sounddevice as sd
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
-from brainflow.data_filter import DataFilter, FilterTypes, DetrendOperations
+from brainflow.data_filter import DataFilter, FilterTypes, DetrendOperations, NoiseTypes
 import pyxdf
 import pandas as pd
 
@@ -65,6 +65,11 @@ class Filtering(object):
       # DataFilter.detrend(data[channel], DetrendOperations.CONSTANT.value)
       DataFilter.perform_lowpass(data[channel], self.sampling_rate, cutoff, 1,
           FilterTypes.BUTTERWORTH.value, 0)
+    return data
+
+  def filter_50hz(self, data: NDArray[Float64]) -> NDArray[Float64]:
+    for _, channel in enumerate(self.exg_channels):
+      DataFilter.remove_environmental_noise(data[channel], self.sampling_rate, NoiseTypes.FIFTY.value)
     return data
 
 class Audio(object):
