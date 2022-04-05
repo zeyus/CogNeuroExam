@@ -6,7 +6,7 @@ https://openbci.com/forum/index.php?p=/discussion/2461/questions-on-cyton-srb1-s
 
 https://docs.openbci.com/Cyton/CytonSDK/
 
-
+https://docs.openbci.com/Cyton/CytonSDCard/
 
 
 - options, write to SD card, get higher sample rate
