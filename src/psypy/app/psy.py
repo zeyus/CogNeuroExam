@@ -75,7 +75,7 @@ class Psypy:
             monitor=self.mon,
             color=self.conf.get('windowColor'))
 
-    def display_text_message(self, txt: str, wait: bool = True) -> None:
+    def display_text_message(self, txt: str, wait: bool = True, wait_time: int = None) -> None:
         """
         Display psychopy message / instructions
         """
@@ -85,6 +85,8 @@ class Psypy:
         self.win.flip()
         if wait:
             self.wait_for_key()
+        if wait_time:
+            self.wait_for_time(wait_time)
 
     def display_text_sequence(self, txt: str) -> list:
         """
@@ -120,7 +122,7 @@ class Psypy:
             sequence += 1
         return sequence_data
 
-    def display_image(self, img: str, wait: bool = True) -> None:
+    def display_image(self, img: str, wait: int = 5) -> None:
         """
         Display psychopy image
         """
@@ -128,7 +130,7 @@ class Psypy:
         img.draw()
         self.win.flip()
         if wait:
-            self.wait_for_key()
+            self.wait_for_time(wait)
     
     def wait_with_callback(self, duration: float, onStart: callable = None, onEnd: callable = None) -> None:
         """
@@ -139,6 +141,12 @@ class Psypy:
         self.wait_for_time(duration)
         if onEnd:
             onEnd()
+
+    def call_on_next_flip(self, callback: callable, *args: any) -> None:
+        """
+        Call a callback function on the next flip
+        """
+        self.win.callOnFlip(callback, *args)
 
 def shutdown_psychopy() -> None:
     """

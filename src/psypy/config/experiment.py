@@ -3,28 +3,40 @@ Specific configuration for the experiment / interface.
 """
 
 CONDS = {
-  'control': 'left',
-  'experimental': 'right',
-  'baseline': 'none',
+  'left': 'left',
+  'right': 'right',
+  'neutral': 'neutral',
 }
 
 PROMPTS = {
-    'control': '''
-        Imagine moving your left hand...
-        ''',
-    'experimental': '''
-        Imagine moving your right hand...
-        ''',
-    'baseline': '''
-        Do nothing...
-        ''',
+    'left': 'res/stimuli/arrow_left.jpg',
+    'right': 'res/stimuli/arrow_right.jpg',
+    'neutral': 'res/stimuli/arrow_up.jpg',
+    'fixation': 'res/whitecircle.jpg',
+    'ready': 'res/redcircle.jpg',
+}
+
+EEG_TAGS = {
+    'left': 11,
+    'right': 12,
+    'neutral': 10,
+    'fixation': 1,
+    'ready': 2,
 }
 
 # Informational messages for the participants
 MESSAGES = {
     # Initial instructions before the experiment starts
     'instructions': """
-        In the following experiment you will be asked to imagine performing a movement while remaining as still as possible.
+        In this experiment you will be asked to kinesthetically imagine a fist clench, of either right or left hand.  \n
+Before every round a cross is presented on the screen, for 2 seconds. Please focus on the cross. \n
+After the cross disappears, you will see a red circle, indicating that in 1 second, an arrow, pointing either left, right or forward will appear. \n
+If the arrow is pointing right, you have to imagine clenching your right first. If left - left fist.  \n
+The arrow will disappear after 4 seconds. During these 4 seconds, please imagine clenching your fist continously. \n
+This means clenching your fist and continuing to clench for the whole time, not clenching it as many times as possible. \n
+If the arrow points forward, simply look at the screen, don't deliberately think of anything.  \n
+Please keep your eyes open while imagining movements and try to move as little as possible.  \n
+Press any key to continue.
 
         """,
     # Break after the practice to prevent accidental start of the experiment
@@ -37,12 +49,11 @@ MESSAGES = {
         """,
     # Transient message while data is writing (hopefully very quick)
     'wait': """
-        Please wait...
+        Break
         """,
     # Final message at the end of the experiment
     'complete': """
-        The experiment is over. Thank you for your participation!
-        
-        Have a wonderful day :)
+        Thank you for your participation.  \n
+You can press any key to yeet out from the experiment. \n
         """
 }

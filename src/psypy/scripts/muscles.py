@@ -46,33 +46,21 @@ def setup():
                 'Cannot write to {}'.format(os.path.abspath(config.data.DATA_PATH))) from ex
     return psy.Psypy(config.psy.PREFS)
 
-def get_condition() -> dict:
+def get_sequence(nreps = 2) -> dict:
     """
-    Choose the condition for the next participant.
+    Prepare stimuli sequence for the experiment.
     """
 
-    # Get number of participants so far in each condition
-    experimental_results = len(glob.glob(
-        config.data.DATA_PATH + os.path.sep + '*_experimental.csv'))
-    control_results = len(glob.glob(
-        config.data.DATA_PATH + os.path.sep + '*_control.csv'))
-    baseline_results = len(glob.glob(
-        config.data.DATA_PATH + os.path.sep + '*_baseline.csv'))
+    conditions = config.exp.CONDS
 
-    # Try to balance the numbers, but if they're already balanced, randonly select one
-    if baseline_results < control_results and baseline_results < experimental_results:
-        condition = 'baseline'
-    elif experimental_results == control_results:
-        condition = random.choice(('control', 'experimental'))
-    elif experimental_results < control_results:
-        condition = 'experimental'
-    else:
-        condition = 'control'
-    # Return the condition, with the completed story text
-    return {
-        'condition': condition,
-        'story': config.experiment.PROMPTS.get(condition)
-    }
+    sequence = []
+    for cond in conditions:
+        sequence = sequence + [cond] * nreps
+
+    # shuffle sequence
+    random.shuffle(sequence)
+
+    return sequence
 
 def write_experiment_data(timing_data: List[dict], participant: list, condition: str):
     """
@@ -101,7 +89,7 @@ def write_experiment_data(timing_data: List[dict], participant: list, condition:
             condition=condition.get('condition')))
 
 
-def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list, condition: str):
+def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list):
     """
     Collect brain data
     """
@@ -113,7 +101,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
         config.data.EEG_FORMAT.format(
             timestamp = time.strftime('%Y-%m-%d_%H_%M_%S'),
             id=participant[0],
-            condition=condition.get('condition')))
+            condition='experiment'))
     
     # start collecting data from board
     streamer.start_stream()
@@ -175,35 +163,31 @@ def run_experiment():
     from psypy.app.psy import shutdown_psychopy
 
     # Get the participants condition
-    condition = get_condition()
+    sequence = get_sequence(2)
 
     # set up events for communicating with threads
     stop_event = threading.Event()
     ready_event = threading.Event()
      # start recording brain data
     streamer = EEG(dummyBoard=True)
-    thread_cont = threading.Thread(target = collect_cont, args = [streamer, stop_event, ready_event, participant, condition])
+    thread_cont = threading.Thread(target = collect_cont, args = [streamer, stop_event, ready_event, participant])
     thread_cont.start()
     # wait for eeg recording to start
     while not ready_event.is_set():
         time.sleep(0.1)
 
     # Show instructions
-    streamer.tag(1.2)
     psypy.display_text_message(config.exp.MESSAGES.get('instructions'))
-    # Run practice experiment
-    # psypy.display_text_sequence(config.story.TEXT.get('practice'))
-    # Get ready
-    streamer.tag(2)
-    psypy.display_text_message(config.exp.MESSAGES.get('continue'))
-    streamer.tag(3)
-    psypy.display_text_message(config.exp.MESSAGES.get('post_practice'))
-    # Run experiment and get time per displayed word
-    
-    # timing_data = psypy.display_text_sequence(condition.get('story'))
-    #timing_data = [0]
+
+    for stim in sequence:
+        psypy.call_on_next_flip(streamer.tag, config.exp.EEG_TAGS.get('fixation'))
+        psypy.display_image(config.exp.PROMPTS.get('fixation'), 1)
+        psypy.call_on_next_flip(streamer.tag, config.exp.EEG_TAGS.get('ready'))
+        psypy.display_image(config.exp.PROMPTS.get('ready'), 2)
+        psypy.call_on_next_flip(streamer.tag, config.exp.EEG_TAGS.get(stim))
+        psypy.display_image(config.exp.PROMPTS.get(stim), 4)
+        psypy.display_text_message(config.exp.MESSAGES.get('wait'), wait = False, wait_time = 1)
     # We can't accept input until the data saves
-    streamer.tag(4.5)
     psypy.display_text_message(config.exp.MESSAGES.get('wait'), wait = False)
     # Save the data
     #write_experiment_data(timing_data, participant, condition)
