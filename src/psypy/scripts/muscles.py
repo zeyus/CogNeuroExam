@@ -111,6 +111,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
     ch_names = config.data.BCI_CHANNEL_NAMES
     ch_idx = config.data.BCI_CHANNEL_INDEXES
 
+    filter_func = None
     if config.data.ENABLE_FIFTY_HZ_FILTER:
         streamFilter = Filtering(streamer.exg_channels, sr)
         filter_func = streamFilter.filter_50hz

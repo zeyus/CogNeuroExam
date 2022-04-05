@@ -28,6 +28,74 @@ class EEG(object):
   def start_stream(self) -> None:
     self.board.prepare_session()
     self.board.start_stream()
+
+  def _send_command(self, command: str) -> None:
+    response = self.board.config_board(command)
+    return response
+
+  def _set_channels_to_defaults(self) -> None:
+    self._send_command(b'd')
+
+  def _channel_config(self,
+                        channel: int,
+                        disable: bool = False,
+                        gain: int = 6,
+                        input_type: int = 0,
+                        bias: bool = True,
+                        srb1: bool = False,
+                        srb2: bool = True) -> bool:
+    """
+    Change SRB1, SRB2, BIAS
+    NOTE: this will reset the channels amp settings
+    """
+    if channel < 1 or channel > self.exg_channels:
+      raise ValueError('Invalid channel number')
+    if gain < 0 or gain > 6:
+      raise ValueError('Invalid gain value')
+    if input_type < 0 or input_type > 7:
+      raise ValueError('Invalid input type')
+
+    self._send_command('x {channel} {disable} {gain} {input_type} {bias} {srb1} {srb2} X'.format(
+      channel = channel,
+      disable = int(disable),
+      gain = gain,
+      input_type = input_type,
+      bias = int(bias),
+      srb1 = int(srb1),
+      srb2 = int(srb2)
+    ))
+    return True
+
+  def _start_sd_recording(self) -> bool:
+    self._send_command('J')
+    return True
+
+  def _stop_sd_recording(self) -> bool:
+    self._send_command('j')
+    return True
+
+  def _set_sample_rate(self, sample_rate: int = 6) -> bool:
+    """
+    0 = 16000 Hz
+    1 = 8000 Hz
+    2 = 4000 Hz
+    3 = 2000 Hz
+    4 = 1000 Hz
+    5 = 500 Hz
+    6 = 250 Hz
+    """
+    if sample_rate < 0 or sample_rate > 6:
+      raise ValueError('Invalid sample rate switch')
+    self._send_command('~{}'.format(sample_rate))
+    return True
+  
+  def _start_time_stamping(self) -> bool:
+    self._send_command('<')
+    return True
+
+  def _stop_time_stamping(self) -> bool:
+    self._send_command('>')
+    return True
     
   def _prepare_board(self) -> None:
     self.params.serial_port = 'COM3'
