@@ -163,21 +163,23 @@ def run_experiment():
     from psypy.app.psy import shutdown_psychopy
 
     # Get the participants condition
-    sequence = get_sequence(2)
+    sequence = get_sequence(config.exp.N_TRIALS)
 
+    psypy.hide_cursor()
+    # Show instructions
+    psypy.display_text_message(config.exp.MESSAGES.get('instructions'))
+    # show break message while waiting for EEG connection
+    psypy.display_text_message(config.exp.MESSAGES.get('wait'), wait = False)
     # set up events for communicating with threads
     stop_event = threading.Event()
     ready_event = threading.Event()
      # start recording brain data
-    streamer = EEG(dummyBoard=True)
+    streamer = EEG(dummyBoard=False)
     thread_cont = threading.Thread(target = collect_cont, args = [streamer, stop_event, ready_event, participant])
     thread_cont.start()
     # wait for eeg recording to start
     while not ready_event.is_set():
         time.sleep(0.1)
-
-    # Show instructions
-    psypy.display_text_message(config.exp.MESSAGES.get('instructions'))
 
     for stim in sequence:
         psypy.call_on_next_flip(streamer.tag, config.exp.EEG_TAGS.get('fixation'))
@@ -200,6 +202,7 @@ def run_experiment():
     while not ready_event.is_set():
         time.sleep(0.1)
     # Byeeeeeeeee
+    psypy.show_cursor()
     psypy.display_text_message(config.exp.MESSAGES.get('complete'))
 
     # cleanup, garbage collection, etc

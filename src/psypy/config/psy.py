@@ -7,13 +7,14 @@ PREFS = {
     # 'audioLib': ['PTB'],
     'winType': ['glfw'],
     # Setting to True makes text sharp, but causes problems with the dialogue
-    'highDPI': False,
-    'windowSize': (3840, 2160),
-    'monitorName': '27in4K',
-    'monitorWidth': 59.67,
+    'highDPI': True,
+    'windowSize': (1680, 1050),
+    'monitorSize': (3200, 1800),
+    'monitorName': 'whatever',
+    'monitorWidth': 30,
     'fullScreen': True,
 
     # UI settings, colors, etc.
-    'windowColor': (1, 1, 1),
-    'textColor': (-1, -1, -1),
+    'windowColor': (-1, -1, -1),
+    'textColor': (1, 1, 1),
 }

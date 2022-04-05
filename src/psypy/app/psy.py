@@ -42,7 +42,7 @@ class Psypy:
         """
 
         mon = monitors.Monitor(self.conf.get('monitorName'))
-        mon.setSizePix(self.conf.get('winSize'))
+        mon.setSizePix(self.conf.get('monitorSize'))
         mon.setWidth(self.conf.get('monitorWidth'))
         return mon
 
@@ -75,18 +75,30 @@ class Psypy:
             monitor=self.mon,
             color=self.conf.get('windowColor'))
 
-    def display_text_message(self, txt: str, wait: bool = True, wait_time: int = None) -> None:
+    def display_text_message(self, txt: str, wait: bool = True, wait_time: int = None, units="cm", height=0.5) -> None:
         """
         Display psychopy message / instructions
         """
 
-        msg = visual.TextStim(self.win, text=txt.strip(), color=self.conf.get('textColor'))
+        msg = visual.TextStim(self.win, text=txt.strip(), color=self.conf.get('textColor'), units=units, height=height)
         msg.draw()
         self.win.flip()
         if wait:
             self.wait_for_key()
         if wait_time:
             self.wait_for_time(wait_time)
+
+    def hide_cursor(self) -> None:
+        """
+        Hide the cursor
+        """
+        self.win.setMouseVisible(False)
+    
+    def show_cursor(self) -> None:
+        """
+        Show the cursor
+        """
+        self.win.setMouseVisible(True)
 
     def display_text_sequence(self, txt: str) -> list:
         """

@@ -2,6 +2,8 @@
 Specific configuration for the experiment / interface.
 """
 
+N_TRIALS = 30
+
 CONDS = {
   'left': 'left',
   'right': 'right',
@@ -9,11 +11,11 @@ CONDS = {
 }
 
 PROMPTS = {
-    'left': 'res/stimuli/arrow_left.jpg',
-    'right': 'res/stimuli/arrow_right.jpg',
-    'neutral': 'res/stimuli/arrow_up.jpg',
-    'fixation': 'res/whitecircle.jpg',
-    'ready': 'res/redcircle.jpg',
+    'left': 'res/stimuli/arrow_left.png',
+    'right': 'res/stimuli/arrow_right.png',
+    'neutral': 'res/stimuli/arrow_up.png',
+    'fixation': 'res/whitecircle.png',
+    'ready': 'res/redcircle.png',
 }
 
 EEG_TAGS = {
