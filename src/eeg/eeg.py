@@ -30,6 +30,28 @@ class CytonInputType(Enum):
   ADSINPUT_BIAS_DRN = 7
 
 class CytonRecordingDuration(Enum):
+  """
+  These are not real "times" rather
+  the cyton board allocates specific amounts of SD card memory
+  based on expected usage.
+
+  This means that if you want to use a higher sample rate
+  than the default, you will need to allocate more memory.
+
+  250Hz generates about 1MB per minute, meaning
+  1000Hz will generate about 4MB per minute.
+
+  Details:
+    'A': BLOCK_COUNT = BLOCK_5MIN   = 5.6Mb
+    'S': BLOCK_COUNT = BLOCK_15MIN  = 17Mb
+    'F': BLOCK_COUNT = BLOCK_30MIN  = 34Mb
+    'G': BLOCK_COUNT = BLOCK_1HR    = 67Mb
+    'H': BLOCK_COUNT = BLOCK_2HR    = 133.5Mb
+    'J': BLOCK_COUNT = BLOCK_4HR    = 266.8Mb
+    'K': BLOCK_COUNT = BLOCK_12HR   = 800Mb
+    'L': BLOCK_COUNT = BLOCK_24HR   = 1.6Gb
+    'a': BLOCK_COUNT = ~14 seconds  = 262Kb
+  """
   MIN_5 = 'A'
   MIN_15 = 'S'
   MIN_30 = 'F'
