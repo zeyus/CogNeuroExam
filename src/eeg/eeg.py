@@ -414,6 +414,12 @@ class EEG(object):
       else:
         self.board.stop_stream()
       self.board.release_session()
+  
+  def __del__(self) -> None:
+    """
+    Destructor: Always try to disconnect the board.
+    """
+    self.stop()
       
 class Filtering(object):
   def __init__(self, exg_channels: List[int], sampling_rate: int) -> None:
