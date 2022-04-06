@@ -77,6 +77,9 @@ class CytonCommands(Enum):
   CHANNEL_CONFIG_PREFIX = 'x'
   CHANNEL_CONFIG_SUFFIX = 'X'
   RESET_CHANNELS = 'd'
+  SOFT_RESET_BOARD = 'v'
+  QUERY_VERSION = 'V'
+  QUERY_REGISTER = '?'
   SD_STOP = 'j'
   STREAM_START = 'b'
   STREAM_STOP = 's'
@@ -132,8 +135,10 @@ class CytonBoardMode(Enum):
 
 class EEG(object):
   sdcard = False
-  def __init__(self, dummyBoard: bool = False, emg_channels: List[int] = []) -> None:
+  is_prepared = False
+  def __init__(self, dummyBoard: bool = False, emg_channels: List[int] = [], serial_port = 'COM3') -> None:
     self.params = BrainFlowInputParams()
+    self.serial_port = serial_port
     self.curves = []
     self.dummyBoard = dummyBoard
     if(dummyBoard):
@@ -148,7 +153,12 @@ class EEG(object):
     self.num_points = self.window_size * self.sampling_rate
 
     # self.start_stream()
-    
+  
+  def prepare(self):
+    # connect to board
+    self.board.prepare_session()
+    self.is_prepared = True
+
   def start_stream(self, sdcard = True, sr: CytonSampleRate = None, duration: CytonRecordingDuration = CytonRecordingDuration.MIN_120) -> None:
     """
     Starts recording EEG data either to sd card or via dongle
@@ -156,9 +166,9 @@ class EEG(object):
     Sample rate defaults to 250Hz for streaming over dongle
     and 1000Hz for recording sd card
     """
-    # connect to board
-    self.board.prepare_session()
-
+    
+    if not self.is_prepared:
+      self.prepare()
     # no channel config possible
     if self.dummyBoard:
       self.board.start_stream()
@@ -187,6 +197,9 @@ class EEG(object):
     # and sdcard is True
     self._start_sd_recording(duration)
   
+  def _soft_reset(self) -> str:
+    return self._send_command(CytonCommands.SOFT_RESET_BOARD.value)
+
   def _config_emg_channels(self) -> bool:
     """
     Disable SRB1 and 2 for EMG channels
@@ -210,7 +223,7 @@ class EEG(object):
     ch = CytonCommands.channel_number_on(channel)
     return self._send_command(ch.value)
 
-  def _send_command(self, command: str) -> None:
+  def _send_command(self, command: str) -> str:
     """
     Sends a command to the board
     """
@@ -294,7 +307,7 @@ class EEG(object):
     """
     Prepares the board for streaming / recording connection
     """
-    self.params.serial_port = 'COM3'
+    self.params.serial_port = self.serial_port
     self.board_id = 2  # cyton daisy
     self.update_speed_ms = 50
     self.board = BoardShim(self.board_id, self.params)
