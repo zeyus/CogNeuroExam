@@ -131,6 +131,7 @@ class CytonBoardMode(Enum):
   GET_BOARD_MODE = '/'
 
 class EEG(object):
+  sdcard = False
   def __init__(self, dummyBoard: bool = False, emg_channels: List[int] = []) -> None:
     self.params = BrainFlowInputParams()
     self.curves = []
@@ -177,6 +178,7 @@ class EEG(object):
       return
     
     # sdcard
+    self.sdcard = True
     if sr is None:
       sr = CytonSampleRate.SR_1000
       self._set_sample_rate(sr)
@@ -191,14 +193,34 @@ class EEG(object):
     """
     for channel in self.emg_channels:
       ch = CytonChannel.from_channel_number(channel)
-      self._channel_config(ch, disable=False, gain=CytonGain.GAIN_24, input_type=0, bias=False, srb1=False, srb2=False)
+      self._channel_config(ch, disable=False, gain=CytonGain.GAIN_24, input_type=CytonInputType.ADSINPUT_NORMAL, bias=False, srb1=False, srb2=False)
     return True
 
+  def disable_channel(self, channel: int) -> bool:
+    """
+    Disables a channel
+    """
+    ch = CytonCommands.channel_number_off(channel)
+    return self._send_command(ch.value)
+
+  def enable_channel(self, channel: int) -> bool:
+    """
+    Enables a channel
+    """
+    ch = CytonCommands.channel_number_on(channel)
+    return self._send_command(ch.value)
+
   def _send_command(self, command: str) -> None:
+    """
+    Sends a command to the board
+    """
     response = self.board.config_board(command)
     return response
 
   def _set_channels_to_defaults(self) -> None:
+    """
+    Sets all channels to default
+    """
     self._send_command(CytonCommands.RESET_CHANNELS.value)
 
   def _channel_config(self,
@@ -234,49 +256,80 @@ class EEG(object):
     return True
 
   def _start_sd_recording(self, duration: CytonRecordingDuration = CytonRecordingDuration.MIN_120) -> bool:
+    """
+    Starts recording to sd card
+    """
     self._send_command(duration.value)
     return True
 
   def _stop_sd_recording(self) -> bool:
+    """
+    Stops recording to sd card
+    """
     self._send_command(CytonCommands.SD_STOP.value)
     return True
 
   def _set_sample_rate(self, sample_rate: CytonSampleRate) -> bool:
+    """
+    Sets the sample rate
+    """
     self._send_command('{}{}'.format(CytonCommands.SAMPLE_RATE_PREFIX.value, sample_rate.value))
     return True
   
   def _start_time_stamping(self) -> bool:
+    """
+    Starts time stamping
+    """
     self._send_command(CytonCommands.TIMESTAMP_START.value)
     return True
 
   def _stop_time_stamping(self) -> bool:
+    """
+    Stops time stamping
+    """
     self._send_command(CytonCommands.TIMESTAMP_STOP.value)
     return True
     
   def _prepare_board(self) -> None:
+    """
+    Prepares the board for streaming / recording connection
+    """
     self.params.serial_port = 'COM3'
     self.board_id = 2  # cyton daisy
     self.update_speed_ms = 50
     self.board = BoardShim(self.board_id, self.params)
 
   def _prepare_dummy_board(self) -> None:
+    """
+    Creates a dummy board
+    """
     self.board_id = BoardIds.SYNTHETIC_BOARD.value
     self.board = BoardShim(self.board_id, self.params)
     self.update_speed_ms = 50
 
-  """Pull latest data from ringbuffer."""
   def poll(self, clear = True) -> NDArray[Float64]:
+    """
+    Gets latest data from the board
+    if clear is True, the ringbuffer is emptied
+    """
     if clear:
       return self.board.get_board_data(self.num_points)
     else:
       return self.board.get_current_board_data(self.num_points)
     
   def tag(self, tag:float) -> None:
+    """
+    Tags the current sample with a float value
+    """
     self.board.insert_marker(tag)
 
   def stop(self) -> None:
+    """
+    Stops streaming (if streaming) and disconnects board session
+    """
     if self.board.is_prepared():
-      self.board.stop_stream()
+      if not self.sdcard:
+        self.board.stop_stream()
       self.board.release_session()
       
 class Filtering(object):
