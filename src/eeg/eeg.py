@@ -19,6 +19,20 @@ class CytonSampleRate(Enum):
   SR_8000 = 1
   SR_16000 = 0
 
+  @classmethod
+  def hz_from_value(cls, value: int) -> int:
+    """
+    Send in value e.g. 3, and get sample rate back in Hz (2000)
+    """
+    return cls.to_hz(cls._value2member_map_[value])
+  
+  @classmethod
+  def to_hz(cls, value: 'CytonSampleRate') -> int:
+    """
+    Converts a CytonSampleRate to Hz
+    """
+    return int(str(value.name).lstrip('SR_'))
+
 class CytonInputType(Enum):
   ADSINPUT_NORMAL = 0
   ADSINPUT_SHORTED = 1
@@ -61,6 +75,33 @@ class CytonRecordingDuration(Enum):
   MIN_720 = 'K'
   MIN_1440 = 'L'
   TEST_14_SEC = 'a'
+
+  @classmethod
+  def get_smallest_block_for_time(cls, max_duration_mins: int, sr: int = 250) -> 'CytonRecordingDuration':
+    """
+    Returns the smallest block that can be used to record for the given time
+
+    Conservatively estimates 1.2Mb per minute.
+    """
+    required_mb = max_duration_mins * (1.2/250) * sr
+    if required_mb < 5:
+      return cls.MIN_5
+    elif required_mb < 16:
+      return cls.MIN_15
+    elif required_mb < 33:
+      return cls.MIN_30
+    elif required_mb < 66:
+      return cls.MIN_60
+    elif required_mb < 132:
+      return cls.MIN_120
+    elif required_mb < 265:
+      return cls.MIN_240
+    elif required_mb < 799:
+      return cls.MIN_720
+    elif required_mb < 1500:
+      return cls.MIN_1440
+    elif required_mb >= 1500:
+      raise ValueError(f"Can't record for {max_duration_mins} minutes with {sr}Hz sampling rate, requires more than 1.5Gb of SD card memory")
 
 class CytonChannel(Enum):
   CH_1 = 1
@@ -181,12 +222,16 @@ class EEG(object):
     self.board.prepare_session()
     self.is_prepared = True
 
-  def start_stream(self, sdcard = True, sr: CytonSampleRate = None, duration: CytonRecordingDuration = CytonRecordingDuration.MIN_120) -> None:
+  def start_stream(self, sdcard = True, sr: CytonSampleRate = None, duration_max: int = 120) -> None:
     """
     Starts recording EEG data either to sd card or via dongle
     defaults to 120 minutes for SDCard recording
     Sample rate defaults to 250Hz for streaming over dongle
     and 1000Hz for recording sd card
+
+    :param sr: sampling rate
+    :param duration_max: max duration in minutes
+    :param sdcard: True for recording to sd card, False for streaming over dongle
     """
     
     if not self.is_prepared:
@@ -217,6 +262,7 @@ class EEG(object):
 
     # if we get here it's a real board
     # and sdcard is True
+    duration = CytonRecordingDuration.get_smallest_block_for_time(duration_max, sr)
     self._start_sd_recording(duration)
   
   def _soft_reset(self) -> str:
@@ -308,6 +354,7 @@ class EEG(object):
     """
     Sets the sample rate
     """
+    self.sampling_rate = CytonSampleRate.to_hz(sample_rate)
     self._send_command('{}{}'.format(CytonCommands.SAMPLE_RATE_PREFIX.value, sample_rate.value))
     return True
   
