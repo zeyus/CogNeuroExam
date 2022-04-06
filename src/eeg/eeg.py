@@ -414,6 +414,7 @@ class EEG(object):
       else:
         self.board.stop_stream()
       self.board.release_session()
+      self.is_prepared = False
   
   def __del__(self) -> None:
     """
