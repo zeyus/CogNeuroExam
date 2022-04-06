@@ -133,7 +133,7 @@ class CytonGain(Enum):
   GAIN_12 = 5
   GAIN_24 = 6
   
-class CytonCommands(Enum):
+class CytonCommand(Enum):
   SAMPLE_RATE_PREFIX = '~'
   BOARD_MODE_PREFIX = '/'
   CHANNEL_CONFIG_PREFIX = 'x'
@@ -181,10 +181,10 @@ class CytonCommands(Enum):
   CHANNEL_16_OFF = 'i'
 
   @classmethod
-  def channel_number_on(cls, channel_number: int) -> 'CytonCommands':
+  def channel_number_on(cls, channel_number: int) -> 'CytonCommand':
     return cls['CHANNEL_{}_ON'.format(channel_number)]
   @classmethod
-  def channel_number_off(cls, channel_number: int) -> 'CytonCommands':
+  def channel_number_off(cls, channel_number: int) -> 'CytonCommand':
     return cls['CHANNEL_{}_OFF'.format(channel_number)]
 
 class CytonBoardMode(Enum):
@@ -265,7 +265,7 @@ class EEG(object):
     self._start_sd_recording(duration)
   
   def _soft_reset(self) -> str:
-    return self._send_command(CytonCommands.SOFT_RESET_BOARD.value)
+    return self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
 
   def _config_emg_channels(self) -> bool:
     """
@@ -280,14 +280,14 @@ class EEG(object):
     """
     Disables a channel
     """
-    ch = CytonCommands.channel_number_off(channel)
+    ch = CytonCommand.channel_number_off(channel)
     return self._send_command(ch.value)
 
   def enable_channel(self, channel: int) -> bool:
     """
     Enables a channel
     """
-    ch = CytonCommands.channel_number_on(channel)
+    ch = CytonCommand.channel_number_on(channel)
     return self._send_command(ch.value)
 
   def _send_command(self, command: str) -> str:
@@ -301,7 +301,7 @@ class EEG(object):
     """
     Sets all channels to default
     """
-    self._send_command(CytonCommands.RESET_CHANNELS.value)
+    self._send_command(CytonCommand.RESET_CHANNELS.value)
 
   def _channel_config(self,
                         channel: CytonChannel,
@@ -323,7 +323,7 @@ class EEG(object):
     """
 
     self._send_command('{prefix}{channel}{disable}{gain}{input_type}{bias}{srb1}{srb2}{suffix}'.format(
-      prefix = CytonCommands.CHANNEL_CONFIG_PREFIX.value,
+      prefix = CytonCommand.CHANNEL_CONFIG_PREFIX.value,
       channel = channel.value,
       disable = int(disable),
       gain = gain.value,
@@ -331,7 +331,7 @@ class EEG(object):
       bias = int(bias),
       srb1 = int(srb1),
       srb2 = int(srb2),
-      suffix = CytonCommands.CHANNEL_CONFIG_SUFFIX.value
+      suffix = CytonCommand.CHANNEL_CONFIG_SUFFIX.value
     ))
     return True
 
@@ -346,7 +346,7 @@ class EEG(object):
     """
     Stops recording to sd card
     """
-    self._send_command(CytonCommands.SD_STOP.value)
+    self._send_command(CytonCommand.SD_STOP.value)
     return True
 
   def _set_sample_rate(self, sample_rate: CytonSampleRate) -> bool:
@@ -354,21 +354,21 @@ class EEG(object):
     Sets the sample rate
     """
     self.sampling_rate = sample_rate.to_hz()
-    self._send_command('{}{}'.format(CytonCommands.SAMPLE_RATE_PREFIX.value, sample_rate.value))
+    self._send_command('{}{}'.format(CytonCommand.SAMPLE_RATE_PREFIX.value, sample_rate.value))
     return True
   
   def _start_time_stamping(self) -> bool:
     """
     Starts time stamping
     """
-    self._send_command(CytonCommands.TIMESTAMP_START.value)
+    self._send_command(CytonCommand.TIMESTAMP_START.value)
     return True
 
   def _stop_time_stamping(self) -> bool:
     """
     Stops time stamping
     """
-    self._send_command(CytonCommands.TIMESTAMP_STOP.value)
+    self._send_command(CytonCommand.TIMESTAMP_STOP.value)
     return True
     
   def _prepare_board(self) -> None:

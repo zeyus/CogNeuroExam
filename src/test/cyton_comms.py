@@ -6,7 +6,7 @@ from time import sleep
 src_dir = os.path.abspath(os.path.dirname(__file__) + os.path.sep + '..' + os.path.sep)
 sys.path.append(src_dir)
 
-from eeg.eeg import EEG, CytonCommands
+from eeg.eeg import EEG, CytonCommand
 
 
 parser = argparse.ArgumentParser()
@@ -16,9 +16,9 @@ args = parser.parse_args()
 streamer = EEG(dummyBoard=False, serial_port=args.serial_port)
 streamer.prepare()
 # get current sample rate
-result = streamer._send_command(CytonCommands.QUERY_REGISTER.value)
+result = streamer._send_command(CytonCommand.QUERY_REGISTER.value)
 print(result)
-result = streamer._send_command(CytonCommands.SOFT_RESET_BOARD.value)
+result = streamer._send_command(CytonCommand.SOFT_RESET_BOARD.value)
 print(result)
 streamer.start_stream(sdcard=False)
 sleep(0.5)
