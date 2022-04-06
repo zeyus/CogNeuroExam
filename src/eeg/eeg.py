@@ -408,8 +408,10 @@ class EEG(object):
     """
     Stops streaming (if streaming) and disconnects board session
     """
-    if self.board.is_prepared():
-      if not self.sdcard:
+    if self.is_prepared:
+      if self.sdcard:
+        self._stop_sd_recording()
+      else:
         self.board.stop_stream()
       self.board.release_session()
       
