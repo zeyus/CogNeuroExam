@@ -19,19 +19,18 @@ class CytonSampleRate(Enum):
   SR_8000 = 1
   SR_16000 = 0
 
-  @classmethod
-  def hz_from_value(cls, value: int) -> int:
+  @staticmethod
+  def hz_from_value(value: int) -> int:
     """
     Send in value e.g. 3, and get sample rate back in Hz (2000)
     """
-    return cls.to_hz(cls._value2member_map_[value])
+    return __class__._value2member_map_[value].to_hz()
   
-  @classmethod
-  def to_hz(cls, value: 'CytonSampleRate') -> int:
+  def to_hz(cls) -> int:
     """
     Converts a CytonSampleRate to Hz
     """
-    return int(str(value.name).lstrip('SR_'))
+    return int(str(cls.name)[3:])
 
 class CytonInputType(Enum):
   ADSINPUT_NORMAL = 0
@@ -354,7 +353,7 @@ class EEG(object):
     """
     Sets the sample rate
     """
-    self.sampling_rate = CytonSampleRate.to_hz(sample_rate)
+    self.sampling_rate = sample_rate.to_hz()
     self._send_command('{}{}'.format(CytonCommands.SAMPLE_RATE_PREFIX.value, sample_rate.value))
     return True
   
