@@ -369,6 +369,7 @@ class EEG(object):
     result = self._send_command('{}{}'.format(CytonCommand.SAMPLE_RATE_PREFIX.value, sample_rate.value))
     if result.startswith('Sample rate set to '):
       self.sampling_rate = sample_rate.to_hz()
+      self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
       return True
     else:
       raise Exception('Unknown response from board: {}'.format(result))
