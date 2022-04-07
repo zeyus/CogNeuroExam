@@ -27,7 +27,7 @@ COLS = [
 # 14 eeg, 2 emg and 3 accel channels
 BCI_CHANNEL_TYPES = ['misc'] + ['eeg'] * 14 + ['emg'] + ['eeg'] + ['misc'] * 3 + ['stim']
 
-# Channel names
+# Channel names orig: ["Fp1,Fp2,C3,C4,P7,P8,O1,O2,F7,F8,F3,F4,T7,T8,P3,P4"]
 BCI_CHANNEL_NAMES = ["pkg","Fp1","Fp2","C3","C4","P7","P8","O1","O2","F7","F8","F3","F4","T7","EMG1","P3","P4","AX","AY","AZ","stim"]
 
 # mainly to slice the data
