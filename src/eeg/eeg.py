@@ -1,4 +1,5 @@
 from enum import Enum
+from re import T
 import time
 from typing import List, Tuple
 from nptyping import NDArray, Float64
@@ -274,7 +275,8 @@ class EEG(object):
     """
     for channel in self.emg_channels:
       ch = CytonChannel.from_channel_number(channel)
-      self._channel_config(ch, disable=False, gain=CytonGain.GAIN_24, input_type=CytonInputType.ADSINPUT_NORMAL, bias=True, srb1=False, srb2=False)
+      result = self._channel_config(ch, disable=False, gain=CytonGain.GAIN_24, input_type=CytonInputType.ADSINPUT_NORMAL, bias=True, srb1=False, srb2=False)
+
     return True
 
   def disable_channel(self, channel: int) -> bool:
@@ -282,14 +284,16 @@ class EEG(object):
     Disables a channel
     """
     ch = CytonCommand.channel_number_off(channel)
-    return self._send_command(ch.value)
+    self._send_command(ch.value)
+    return True
 
   def enable_channel(self, channel: int) -> bool:
     """
     Enables a channel
     """
     ch = CytonCommand.channel_number_on(channel)
-    return self._send_command(ch.value)
+    self._send_command(ch.value)
+    return True
 
   def _send_command(self, command: str) -> str:
     """
@@ -325,7 +329,7 @@ class EEG(object):
       srb2 = True
     """
 
-    self._send_command('{prefix}{channel}{disable}{gain}{input_type}{bias}{srb1}{srb2}{suffix}'.format(
+    result = self._send_command('{prefix}{channel}{disable}{gain}{input_type}{bias}{srb1}{srb2}{suffix}'.format(
       prefix = CytonCommand.CHANNEL_CONFIG_PREFIX.value,
       channel = channel.value,
       disable = int(disable),
@@ -336,7 +340,13 @@ class EEG(object):
       srb2 = int(srb2),
       suffix = CytonCommand.CHANNEL_CONFIG_SUFFIX.value
     ))
-    return True
+    if result.startswith('Success:'):
+      return True
+    elif result.startswith('Failure:') or result.startswith('Timeout'):
+      return False
+    elif not self.sdcard:
+      return True
+    raise Exception('Unknown response from board: {}'.format(result))
 
   def _start_sd_recording(self, duration: CytonRecordingDuration = CytonRecordingDuration.MIN_120) -> bool:
     """
@@ -356,23 +366,32 @@ class EEG(object):
     """
     Sets the sample rate
     """
-    self.sampling_rate = sample_rate.to_hz()
-    self._send_command('{}{}'.format(CytonCommand.SAMPLE_RATE_PREFIX.value, sample_rate.value))
-    return True
+    result = self._send_command('{}{}'.format(CytonCommand.SAMPLE_RATE_PREFIX.value, sample_rate.value))
+    if result.startswith('Sample rate set to '):
+      self.sampling_rate = sample_rate.to_hz()
+      return True
+    else:
+      raise Exception('Unknown response from board: {}'.format(result))
   
   def _start_time_stamping(self) -> bool:
     """
     Starts time stamping
     """
-    self._send_command(CytonCommand.TIMESTAMP_START.value)
-    return True
+    result = self._send_command(CytonCommand.TIMESTAMP_START.value)
+    if result == 'Time stamp ON$$$' or not self.sdcard:
+      return True
+    else:
+      return False
 
   def _stop_time_stamping(self) -> bool:
     """
     Stops time stamping
     """
-    self._send_command(CytonCommand.TIMESTAMP_STOP.value)
-    return True
+    result = self._send_command(CytonCommand.TIMESTAMP_STOP.value)
+    if result == 'Time stamp OFF$$$' or not self.sdcard:
+      return True
+    else:
+      return False
     
   def _prepare_board(self) -> None:
     """
