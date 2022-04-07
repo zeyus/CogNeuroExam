@@ -9,6 +9,7 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, FilterTypes, DetrendOperations, NoiseTypes
 import pyxdf
 import pandas as pd
+import logging
 
 class CytonSampleRate(Enum):
   SR_250 = 6
@@ -294,7 +295,9 @@ class EEG(object):
     """
     Sends a command to the board
     """
+    logging.info("Sending command: {}".format(command))
     response = self.board.config_board(command)
+    logging.info("Response: {}".format(response))
     return response
 
   def _set_channels_to_defaults(self) -> None:
@@ -393,6 +396,8 @@ class EEG(object):
     Gets latest data from the board
     if clear is True, the ringbuffer is emptied
     """
+    if self.sdcard:
+      return None
     if clear:
       return self.board.get_board_data(self.num_points)
     else:
