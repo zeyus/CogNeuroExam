@@ -77,13 +77,13 @@ class CytonRecordingDuration(Enum):
   TEST_14_SEC = 'a'
 
   @classmethod
-  def get_smallest_block_for_time(cls, max_duration_mins: int, sr: int = 250) -> 'CytonRecordingDuration':
+  def get_smallest_block_for_time(cls, max_duration_mins: int, sr: CytonSampleRate = CytonSampleRate.SR_250) -> 'CytonRecordingDuration':
     """
     Returns the smallest block that can be used to record for the given time
 
     Conservatively estimates 1.2Mb per minute.
     """
-    required_mb = max_duration_mins * (1.2/250) * sr
+    required_mb = max_duration_mins * (1.2/250) * sr.to_hz()
     if required_mb < 5:
       return cls.MIN_5
     elif required_mb < 16:
@@ -274,7 +274,7 @@ class EEG(object):
     """
     for channel in self.emg_channels:
       ch = CytonChannel.from_channel_number(channel)
-      self._channel_config(ch, disable=False, gain=CytonGain.GAIN_24, input_type=CytonInputType.ADSINPUT_NORMAL, bias=False, srb1=False, srb2=False)
+      self._channel_config(ch, disable=False, gain=CytonGain.GAIN_24, input_type=CytonInputType.ADSINPUT_NORMAL, bias=True, srb1=False, srb2=False)
     return True
 
   def disable_channel(self, channel: int) -> bool:

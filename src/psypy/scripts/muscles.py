@@ -102,14 +102,16 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
             timestamp = time.strftime('%Y-%m-%d_%H_%M_%S'),
             id=participant[0],
             condition='experiment'))
-    
-    # start collecting data from board
-    streamer.start_stream()
-    # MNE data
-    sr = streamer.sampling_rate
     ch_types = config.data.BCI_CHANNEL_TYPES
     ch_names = config.data.BCI_CHANNEL_NAMES
     ch_idx = config.data.BCI_CHANNEL_INDEXES
+
+    ch_emg = [index for index,value in enumerate(ch_types) if value == 'emg']
+    streamer.emg_channels = ch_emg
+    # start collecting data from board
+    streamer.start_stream(duration_max=60)
+    # MNE data
+    sr = streamer.sampling_rate
 
     filter_func = None
     if config.data.ENABLE_FIFTY_HZ_FILTER:
