@@ -241,7 +241,8 @@ class EEG(object):
     if self.dummyBoard:
       self.board.start_stream()
       return
-    
+    # soft reset for fun
+    self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
     # set channels to default
     self._set_channels_to_defaults()
     # set EMG configuration
@@ -369,6 +370,7 @@ class EEG(object):
     result = self._send_command('{}{}'.format(CytonCommand.SAMPLE_RATE_PREFIX.value, sample_rate.value))
     if result.startswith('Sample rate set to '):
       self.sampling_rate = sample_rate.to_hz()
+      # undocumented requirement to soft reset board after sample rate change
       self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
       return True
     else:
