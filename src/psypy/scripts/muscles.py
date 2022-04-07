@@ -2,6 +2,7 @@
 Main word-by-word experiment script
 """
 
+from math import ceil
 import sys
 import os
 import glob
@@ -89,7 +90,7 @@ def write_experiment_data(timing_data: List[dict], participant: list, condition:
             condition=condition.get('condition')))
 
 
-def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list):
+def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list, max_dur_mins: int = 60):
     """
     Collect brain data
     """
@@ -167,7 +168,7 @@ def run_experiment():
 
     # Get the participants condition
     sequence = get_sequence(config.exp.N_TRIALS)
-
+    max_dur_mins = ceil(((len(sequence) * 8) / 60) + 3) # 8 seconds per trial, plus 2 mins for buffer
     psypy.hide_cursor()
     # Show instructions
     psypy.display_text_message(config.exp.MESSAGES.get('instructions'))
@@ -178,7 +179,8 @@ def run_experiment():
     ready_event = threading.Event()
      # start recording brain data
     streamer = EEG(dummyBoard=False)
-    thread_cont = threading.Thread(target = collect_cont, args = [streamer, stop_event, ready_event, participant])
+
+    thread_cont = threading.Thread(target = collect_cont, args = [streamer, stop_event, ready_event, participant, max_dur_mins])
     thread_cont.start()
     # wait for eeg recording to start
     while not ready_event.is_set():
