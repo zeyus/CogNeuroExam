@@ -396,7 +396,7 @@ class EEG(object):
     Gets latest data from the board
     if clear is True, the ringbuffer is emptied
     """
-    if self.sdcard:
+    if self.sdcard and not self.dummyBoard:
       return None
     if clear:
       return self.board.get_board_data(self.num_points)
