@@ -2,7 +2,7 @@
 Specific configuration for the experiment / interface.
 """
 
-N_TRIALS = 15
+N_TRIALS = 1
 
 CONDS = {
   'left': 'left',

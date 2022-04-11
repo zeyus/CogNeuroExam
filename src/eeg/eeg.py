@@ -259,7 +259,7 @@ class EEG(object):
     # sdcard
     self.sdcard = True
     if sr is None:
-      sr = CytonSampleRate.SR_1000
+      sr = CytonSampleRate.SR_500
       self._set_sample_rate(sr)
 
     # if we get here it's a real board
@@ -368,7 +368,7 @@ class EEG(object):
     Sets the sample rate
     """
     result = self._send_command('{}{}'.format(CytonCommand.SAMPLE_RATE_PREFIX.value, sample_rate.value))
-    if result.startswith('Sample rate set to '):
+    if result.startswith('Success: '):
       self.sampling_rate = sample_rate.to_hz()
       # undocumented requirement to soft reset board after sample rate change
       self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
