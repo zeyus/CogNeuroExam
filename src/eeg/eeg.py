@@ -149,6 +149,8 @@ class CytonCommand(Enum):
   STREAM_STOP = 's'
   TIMESTAMP_START = '<'
   TIMESTAMP_STOP = '>'
+  USE_8_CHANNELS = 'c'
+  USE_16_CHANNELS = 'C'
   CHANNEL_1_ON = '!'
   CHANNEL_1_OFF = '1'
   CHANNEL_2_ON = '@'
@@ -245,6 +247,8 @@ class EEG(object):
     self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
     # set channels to default
     self._set_channels_to_defaults()
+    
+    self._send_command(CytonCommand.USE_16_CHANNELS.value)
     # set EMG configuration
     self._config_emg_channels()
 
@@ -354,7 +358,8 @@ class EEG(object):
     Starts recording to sd card
     """
     self._send_command(duration.value)
-    self.board.start_stream()
+    self._send_command(CytonCommand.STREAM_START.value)
+    # self.board.start_stream()
     return True
 
   def _stop_sd_recording(self) -> bool:
@@ -362,7 +367,8 @@ class EEG(object):
     Stops recording to sd card
     """
     self._send_command(CytonCommand.SD_STOP.value)
-    self.board.stop_stream()
+    self._send_command(CytonCommand.STREAM_STOP.value)
+    # self.board.stop_stream()
     return True
 
   def _set_sample_rate(self, sample_rate: CytonSampleRate) -> bool:
