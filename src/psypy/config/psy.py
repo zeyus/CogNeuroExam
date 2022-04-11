@@ -12,7 +12,7 @@ PREFS = {
     'monitorSize': (3200, 1800),
     'monitorName': 'whatever',
     'monitorWidth': 30,
-    'fullScreen': True,
+    'fullScreen': False,
 
     # UI settings, colors, etc.
     'windowColor': (-1, -1, -1),

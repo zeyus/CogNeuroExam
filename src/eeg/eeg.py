@@ -259,7 +259,7 @@ class EEG(object):
     # sdcard
     self.sdcard = True
     if sr is None:
-      sr = CytonSampleRate.SR_500
+      sr = CytonSampleRate.SR_1000
       self._set_sample_rate(sr)
 
     # if we get here it's a real board
@@ -354,6 +354,7 @@ class EEG(object):
     Starts recording to sd card
     """
     self._send_command(duration.value)
+    self.board.start_stream()
     return True
 
   def _stop_sd_recording(self) -> bool:
@@ -361,6 +362,7 @@ class EEG(object):
     Stops recording to sd card
     """
     self._send_command(CytonCommand.SD_STOP.value)
+    self.board.stop_stream()
     return True
 
   def _set_sample_rate(self, sample_rate: CytonSampleRate) -> bool:
