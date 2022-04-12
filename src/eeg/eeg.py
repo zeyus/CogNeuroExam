@@ -140,6 +140,7 @@ class CytonCommand(Enum):
   BOARD_MODE_PREFIX = '/'
   CHANNEL_CONFIG_PREFIX = 'x'
   CHANNEL_CONFIG_SUFFIX = 'X'
+  MARKER_PREFIX = '`'
   RESET_CHANNELS = 'd'
   SOFT_RESET_BOARD = 'v'
   QUERY_VERSION = 'V'
@@ -225,7 +226,7 @@ class EEG(object):
     self.board.prepare_session()
     self.is_prepared = True
 
-  def start_stream(self, sdcard = True, sr: CytonSampleRate = None, duration_max: int = 120) -> None:
+  def start_stream(self, sdcard = True, sr: CytonSampleRate = None, duration_max: int = 120, use_markers: bool = True) -> None:
     """
     Starts recording EEG data either to sd card or via dongle
     defaults to 120 minutes for SDCard recording
@@ -235,6 +236,8 @@ class EEG(object):
     :param sr: sampling rate
     :param duration_max: max duration in minutes
     :param sdcard: True for recording to sd card, False for streaming over dongle
+    :param use_markers: True for recording markers, False for not recording markers
+                        Note, use of markers disables accelerometor AUX channels.
     """
     
     if not self.is_prepared:
@@ -247,6 +250,9 @@ class EEG(object):
     self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
     # set channels to default
     self._set_channels_to_defaults()
+
+    if use_markers:
+      self._set_board_mode(CytonBoardMode.MARKER)
     
     self._send_command(CytonCommand.USE_16_CHANNELS.value)
     # set EMG configuration
@@ -283,6 +289,12 @@ class EEG(object):
       result = self._channel_config(ch, disable=False, gain=CytonGain.GAIN_24, input_type=CytonInputType.ADSINPUT_NORMAL, bias=True, srb1=False, srb2=False)
 
     return True
+
+  def _set_board_mode(self, mode: CytonBoardMode):
+    """
+    Sets the board mode to either debug, analog, digital, or marker
+    """
+    self._send_command("{}{}".format(CytonCommand.BOARD_MODE_PREFIX.value, mode.value))
 
   def disable_channel(self, channel: int) -> bool:
     """
@@ -433,11 +445,18 @@ class EEG(object):
     else:
       return self.board.get_current_board_data(self.num_points)
     
-  def tag(self, tag:float) -> None:
+  def tag(self, tag:str) -> None:
     """
-    Tags the current sample with a float value
+    Tags the current sample with a char
+
+    Args:
+      tag: char to tag the sample with, can be any char e.g. 'a', 'b', 'c', '1', '2', '3'
     """
-    self.board.insert_marker(tag)
+    if self.sdcard and not self.dummyBoard:
+      self._send_command('{}{}'.format(CytonCommand.MARKER_PREFIX.value, tag))
+    else:
+      # use wrapper to tag the sample
+      self.board.insert_marker(tag)
 
   def stop(self) -> None:
     """

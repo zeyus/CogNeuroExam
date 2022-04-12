@@ -110,7 +110,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
     ch_emg = [index for index,value in enumerate(ch_types) if value == 'emg']
     streamer.emg_channels = ch_emg
     # start collecting data from board
-    streamer.start_stream(sdcard=True, duration_max=10)
+    streamer.start_stream(sdcard=True, duration_max=max_dur_mins)
     # MNE data
     sr = streamer.sampling_rate
 

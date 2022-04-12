@@ -19,11 +19,11 @@ PROMPTS = {
 }
 
 EEG_TAGS = {
-    'left': 11,
-    'right': 12,
-    'neutral': 10,
-    'fixation': 1,
-    'ready': 2,
+    'left': 'l',
+    'right': 'r',
+    'neutral': 'n',
+    'fixation': 'f',
+    'ready': 'k',
 }
 
 # Informational messages for the participants
