@@ -246,6 +246,8 @@ class EEG(object):
     if self.dummyBoard:
       self.board.start_stream()
       return
+    # Set default board mode to init comms
+    self._set_board_mode(CytonBoardMode.DEFAULT)
     # soft reset for fun
     self._send_command(CytonCommand.SOFT_RESET_BOARD.value)
     # set channels to default
@@ -369,7 +371,9 @@ class EEG(object):
     """
     Starts recording to sd card
     """
-    self._send_command(duration.value)
+    response = self._send_command(duration.value)
+    if "failed" in response or "formatted" in response:
+      raise Exception("Failed to start recording, response: {}".format(response))
     self._send_command(CytonCommand.STREAM_START.value)
     # self.board.start_stream()
     return True
