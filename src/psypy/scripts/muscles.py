@@ -168,16 +168,25 @@ def run_experiment():
 
     # Get the participants condition
     sequence = get_sequence(config.exp.N_TRIALS)
+    
     max_dur_mins = ceil(((len(sequence) * 8) / 60) + 3) # 8 seconds per trial, plus 2 mins for buffer
     psypy.hide_cursor()
     # Show instructions
-    psypy.display_text_message(config.exp.MESSAGES.get('instructions'))
+    # write sequence to file
+    cur_date = time.strftime('%Y-%m-%d')
+    sequence_file = open(config.data.DATA_PATH + os.path.sep + 'sequence-{}.csv'.format(cur_date), 'w')
+    sequence_file.write('id,stim,timestamp\n')
+    sequence_file.write('{},{},{}\n'.format(participant[0], "instructions", psypy.get_time()))
+    psypy.display_text_message(config.exp.MESSAGES.get('instructions'), wait_time=4)
     # show break message while waiting for EEG connection
+    sequence_file.write('{},{},{}\n'.format(participant[0], "eeg_prep", psypy.get_time()))
     psypy.display_text_message(config.exp.MESSAGES.get('wait'), wait = False)
+
     # set up events for communicating with threads
     stop_event = threading.Event()
     ready_event = threading.Event()
-     # start recording brain data
+    
+    # start recording brain data
     streamer = EEG(dummyBoard=False)
 
     thread_cont = threading.Thread(target = collect_cont, args = [streamer, stop_event, ready_event, participant, max_dur_mins])
@@ -187,14 +196,20 @@ def run_experiment():
         time.sleep(0.1)
 
     for stim in sequence:
+        sequence_file.write('{},{},{}\n'.format(participant[0], "fixation", psypy.get_time()))
         psypy.call_on_next_flip(streamer.tag, config.exp.EEG_TAGS.get('fixation'))
         psypy.display_image(config.exp.PROMPTS.get('fixation'), 1)
+
+        sequence_file.write('{},{},{}\n'.format(participant[0], "ready", psypy.get_time()))
         psypy.call_on_next_flip(streamer.tag, config.exp.EEG_TAGS.get('ready'))
         psypy.display_image(config.exp.PROMPTS.get('ready'), 2)
+        
+        sequence_file.write('{},{},{}\n'.format(participant[0], "stim", psypy.get_time()))
         psypy.call_on_next_flip(streamer.tag, config.exp.EEG_TAGS.get(stim))
         psypy.display_image(config.exp.PROMPTS.get(stim), 4)
         psypy.display_text_message(config.exp.MESSAGES.get('wait'), wait = False, wait_time = 1)
     # We can't accept input until the data saves
+    sequence_file.close()
     psypy.display_text_message(config.exp.MESSAGES.get('wait'), wait = False)
     # Save the data
     #write_experiment_data(timing_data, participant, condition)

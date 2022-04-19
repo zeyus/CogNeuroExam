@@ -5,13 +5,13 @@ Specific configuration for the experiment / interface.
 N_TRIALS = 30
 
 CONDS = {
-  'left': 'left',
+  'clench': 'clench',
   'right': 'right',
   'neutral': 'neutral',
 }
 
 PROMPTS = {
-    'left': 'res/stimuli/arrow_left.png',
+    'clench': 'res/stimuli/clench.jpg',
     'right': 'res/stimuli/arrow_right.png',
     'neutral': 'res/stimuli/arrow_up.png',
     'fixation': 'res/whitecircle.png',
@@ -19,7 +19,7 @@ PROMPTS = {
 }
 
 EEG_TAGS = {
-    'left': 'l',
+    'clench': 'l',
     'right': 'r',
     'neutral': 'n',
     'fixation': 'f',
@@ -30,16 +30,7 @@ EEG_TAGS = {
 MESSAGES = {
     # Initial instructions before the experiment starts
     'instructions': """
-        In this experiment you will be asked to kinesthetically imagine a fist clench, of either right or left hand.  \n
-Before every round a cross is presented on the screen, for 2 seconds. Please focus on the cross. \n
-After the cross disappears, you will see a red circle, indicating that in 1 second, an arrow, pointing either left, right or forward will appear. \n
-If the arrow is pointing right, you have to imagine clenching your right first. If left - left fist.  \n
-The arrow will disappear after 4 seconds. During these 4 seconds, please imagine clenching your fist continously. \n
-This means clenching your fist and continuing to clench for the whole time, not clenching it as many times as possible. \n
-If the arrow points forward, simply look at the screen, don't deliberately think of anything.  \n
-Please keep your eyes open while imagining movements and try to move as little as possible.  \n
-Press any key to continue.
-
+        Just do the thing...
         """,
     # Break after the practice to prevent accidental start of the experiment
     'continue': """

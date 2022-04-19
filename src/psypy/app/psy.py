@@ -75,6 +75,12 @@ class Psypy:
             monitor=self.mon,
             color=self.conf.get('windowColor'))
 
+    def get_time(self) -> float:
+        """
+        Return the current time
+        """
+        return core.getTime()
+        
     def display_text_message(self, txt: str, wait: bool = True, wait_time: int = None, units="cm", height=0.5) -> None:
         """
         Display psychopy message / instructions
