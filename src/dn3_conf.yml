@@ -1,0 +1,20 @@
+Configuratron:
+  sfreq: 1000
+datasets:
+  public_dataset:
+    toplevel: ./data_nn/
+    filename_format: "grasp_{subject}_{session}_raw"
+    tmin: -0.1
+    tlen: 4.0
+    bandpass: [0.1, 49]
+    events:
+      right: 114
+      neutral: 110
+    picks:
+      - C3
+      - P3
+
+architecture:
+  layers: 4
+  activation: 'relu'
+  dropout: 0.1

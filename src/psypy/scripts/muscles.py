@@ -110,7 +110,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
     ch_emg = [index for index,value in enumerate(ch_types) if value == 'emg']
     streamer.emg_channels = ch_emg
     # start collecting data from board
-    streamer.start_stream(sdcard=True, duration_max=max_dur_mins)
+    streamer.start_stream(sdcard=True, duration_max=max_dur_mins*2)
     # MNE data
     sr = streamer.sampling_rate
 
@@ -169,7 +169,7 @@ def run_experiment():
     # Get the participants condition
     sequence = get_sequence(config.exp.N_TRIALS)
     
-    max_dur_mins = ceil(((len(sequence) * 8) / 60) + 3) # 8 seconds per trial, plus 2 mins for buffer
+    max_dur_mins = ceil(((len(sequence) * 10) / 60) + 3) # 10 seconds per trial, plus 3 mins for buffer
     psypy.hide_cursor()
     # Show instructions
     # write sequence to file

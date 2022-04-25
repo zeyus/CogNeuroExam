@@ -3,8 +3,8 @@ import mne
 import numpy as np
 
 
-data_file = 'data/OBCI_14.TXT'
-data_file_clean = 'data/OBCI_14_clean.TXT'
+data_file = 'data/OBCI_16.TXT'
+data_file_clean = 'data/OBCI_16_clean.TXT'
 
 
 sfreq = 1000 # Hz
