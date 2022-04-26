@@ -1,5 +1,5 @@
 Configuratron:
-  sfreq: 100
+  sfreq: 200
   preload: True
   deep1010: True
   preload: True
@@ -21,16 +21,17 @@ datasets:
     data_max: True
     hpf: 0.1
     lpf: 49
+    notch_freq: 50
     events:
-      108: "l"
+      114: "r"
       110: "n"
     picks:
-      - C3
-      - P3
-    lr: 0.00001
+      - "C3"
+      - "P3"
+    lr: 0.0001
     train_params:
       folds: 3
     training_configuration:
-      batch_size: 8
-      epochs: 100
+      batch_size: 6
+      epochs: 50
       
