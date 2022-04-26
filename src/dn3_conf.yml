@@ -3,10 +3,13 @@ Configuratron:
   preload: True
   deep1010: True
   preload: True
-  architecture:
-    layers: 16
-    activation: 'relu'
-    dropout: 0.1
+architecture:
+  do: 0.38
+  s_growth: 32
+  t_filters: 64
+  pooling: 50
+  temp_layers: 16
+  spat_layers: 8
 use_gpu: True
 test_fraction: 0.2
 datasets:
@@ -28,10 +31,11 @@ datasets:
     picks:
       - "C3"
       - "P3"
-    lr: 0.0001
+    lr: 0.000001
     train_params:
       folds: 3
+      validation_fraction: 0.35
     training_configuration:
-      batch_size: 6
-      epochs: 50
+      batch_size: 4
+      epochs: 200
       
