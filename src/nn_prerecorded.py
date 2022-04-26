@@ -2,6 +2,7 @@ from dn3.configuratron import ExperimentConfig
 from dn3.trainable.processes import StandardClassification
 from dn3.trainable.models import TIDNet
 
+
 experiment = ExperimentConfig("./src/dn3_conf.yml")
 ds_config = experiment.datasets['clencher']
 
