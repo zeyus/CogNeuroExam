@@ -1,20 +1,36 @@
 Configuratron:
-  sfreq: 1000
+  sfreq: 100
+  preload: True
+  deep1010: True
+  preload: True
+  architecture:
+    layers: 16
+    activation: 'relu'
+    dropout: 0.1
+use_gpu: True
+test_fraction: 0.2
 datasets:
-  public_dataset:
-    toplevel: ./data_nn/
+  clencher:
+    dataset_id: 1
+    name: "CogSci clencher"
+    toplevel: "./data_nn/"
     filename_format: "grasp_{subject}_{session}_raw"
     tmin: -0.1
     tlen: 4.0
-    bandpass: [0.1, 49]
+    data_min: True
+    data_max: True
+    hpf: 0.1
+    lpf: 49
     events:
-      right: 114
-      neutral: 110
+      108: "l"
+      110: "n"
     picks:
       - C3
       - P3
-
-architecture:
-  layers: 4
-  activation: 'relu'
-  dropout: 0.1
+    lr: 0.00001
+    train_params:
+      folds: 3
+    training_configuration:
+      batch_size: 8
+      epochs: 100
+      
