@@ -1,7 +1,7 @@
 Configuratron:
   sfreq: 150
   preload: True
-  deep1010: False
+  deep1010: True
 architecture:
   do: 0.37
   s_growth: 32
