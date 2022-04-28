@@ -56,8 +56,8 @@ for subject_name in dataset.get_thinkers():
         continue
     print("Processiong subject: {}".format(subject_name))
     thinker = dataset.thinkers[subject_name]
-    print(thinker.get_targets())
-    exit()
+    # print(thinker.get_targets())
+    # exit()
     # note, "testing" is used for validation, as you can't set test fraction to 0.
     training, _, testing = thinker.split(test_frac = ds_config.split_args.validation_fraction, validation_frac = 0)
     process = make_model_and_process()
