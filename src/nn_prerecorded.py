@@ -52,8 +52,6 @@ def make_model_and_process():
 
 # results = list()
 for subject_name in dataset.get_thinkers():
-    if not subject_name == 'l':
-        continue
     print("Processiong subject: {}".format(subject_name))
     thinker = dataset.thinkers[subject_name]
     # print(thinker.get_targets())
