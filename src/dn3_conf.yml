@@ -1,14 +1,25 @@
 Configuratron:
-  sfreq: 200
+  sfreq: 150
   preload: True
   deep1010: True
-architecture:
-  do: 0.33
-  # # s_growth: 32
-  # t_filters: 64
-  # # pooling: 20
-  temp_layers: 16
-  spat_layers: 16
+model_args:
+  do: 0.45
+  s_growth: 24
+  t_filters: 32
+  pooling: 20
+  temp_layers: 6
+  spat_layers: 6
+  temp_span: 0.05
+  bottleneck: 3
+classifier_args:
+  l2_weight_decay: 0.05
+  label_smoothing: null
+  learning_rate: 0.00001
+fit_args:
+  batch_size: 7
+  epochs: 200
+  balance_method: "undersample"
+  train_log_interval: null
 use_gpu: True
 datasets:
   clencher:
@@ -16,12 +27,13 @@ datasets:
     name: "CogSci clencher"
     toplevel: "./data_nn/"
     filename_format: "grasp_{subject}_{session}_raw"
-    tmin: 0.1
-    tlen: 3.0
-    data_min: True
-    data_max: True
+    tmin: -0.1
+    tlen: 4.0
+    data_min: -0.0951
+    data_max: 114.0
     hpf: 0.1
     lpf: 49
+    use_avg_ref: True
     notch_freq: 50
     events:
       114: "r"
@@ -29,12 +41,7 @@ datasets:
     picks:
       - "C3"
       - "P3"
-    lr: 0.00001
-    train_params:
-      # folds: 3
+    split_args:
       validation_fraction: 0.35
-    training_configuration:
-      batch_size: 6
-      epochs: 500
-      balance_method: "undersample"
+    
       

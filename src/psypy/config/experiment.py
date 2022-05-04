@@ -5,13 +5,13 @@ Specific configuration for the experiment / interface.
 N_TRIALS = 30
 
 CONDS = {
-  'clench': 'clench',
+  'left': 'left',
   'right': 'right',
   'neutral': 'neutral',
 }
 
 PROMPTS = {
-    'clench': 'res/stimuli/clench.jpg',
+    'left': 'res/stimuli/arrow_left.png',
     'right': 'res/stimuli/arrow_right.png',
     'neutral': 'res/stimuli/arrow_up.png',
     'fixation': 'res/whitecircle.png',
@@ -19,7 +19,7 @@ PROMPTS = {
 }
 
 EEG_TAGS = {
-    'clench': 'l',
+    'left': 'l',
     'right': 'r',
     'neutral': 'n',
     'fixation': 'f',
