@@ -1,6 +1,7 @@
+from datetime import datetime
 from dn3.configuratron import ExperimentConfig
 from dn3.trainable.processes import StandardClassification
-from dn3.trainable.models import TIDNet
+from dn3.trainable.models import TIDNet, EEGNet, EEGNetStrided
 from dn3.data.utils import get_dataset_max_and_min
 from mne.io import read_raw_fif, Raw
 from mne import rename_channels
@@ -23,6 +24,28 @@ def custom_raw_loader(fname: Path, preload=True) -> Raw:
         raw.load_data()
     return raw
 
+
+def write_model_results(model_info, results):
+    curdate = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    filename = 'results_{date}.csv'.format(date=curdate)
+    with open('output/{}'.format(filename), 'w') as f:
+        f.write(f'{model_info}\n\n\n\n')
+        for subject, train_log, valid_log in results:
+            train_log.to_csv('output/details_{subject}_{date}_train.csv'.format(date=curdate, subject=subject), header=True)
+            valid_log.to_csv('output/details_{subject}_{date}_valid.csv'.format(date=curdate, subject=subject), header=True)
+            f.write(f'Subject: {subject}\n\n')
+            best_loss = min(train_log['loss'])
+            best_accuracy = max(train_log['Accuracy'])
+            f.write('Training:\n')
+            f.write(f'Best loss: {best_loss}\n')
+            f.write(f'Best accuracy: {best_accuracy}\n')
+            f.write('Validation:\n')
+            best_loss = min(valid_log['loss'])
+            best_accuracy = max(valid_log['Accuracy'])
+            f.write(f'Best loss: {best_loss}\n')
+            f.write(f'Best accuracy: {best_accuracy}\n')
+            f.write('\n')
+        
 
 
 experiment = ExperimentConfig("./src/dn3_conf.yml")
@@ -47,10 +70,10 @@ if isinstance(ds_config.data_min, bool) or isinstance(ds_config.data_max, bool):
 # dataset.add_transform()
 
 def make_model_and_process():
-    tidnet = TIDNet.from_dataset(dataset, **experiment.model_args.as_dict())
+    tidnet = EEGNet.from_dataset(dataset, **experiment.model_args.as_dict())
     return StandardClassification(tidnet, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
-# results = list()
+results = list()
 for subject_name in dataset.get_thinkers():
     print("Processiong subject: {}".format(subject_name))
     thinker = dataset.thinkers[subject_name]
@@ -59,7 +82,24 @@ for subject_name in dataset.get_thinkers():
     # note, "testing" is used for validation, as you can't set test fraction to 0.
     training, _, testing = thinker.split(test_frac = ds_config.split_args.validation_fraction, validation_frac = 0)
     process = make_model_and_process()
-    process.fit(training_dataset=training, validation_dataset=testing, **experiment.fit_args.as_dict())
+    train_log, valid_log = process.fit(training_dataset=training, validation_dataset=testing, **experiment.fit_args.as_dict())
+    results.append((subject_name, train_log, valid_log))
+
+write_model_results({
+    'model_type': 'EEGNet',
+    'model_args': experiment.model_args.as_dict(),
+    'classifier_args': experiment.classifier_args.as_dict(),
+    'fit_args': experiment.fit_args.as_dict(),
+    'split_args': ds_config.split_args.as_dict(),
+    'data_min': ds_config.data_min,
+    'data_max': ds_config.data_max,
+    'hpf': ds_config.hpf,
+    'lpf': ds_config.lpf,
+    'tmin': ds_config.tmin,
+    'tlen': ds_config.tlen,
+    'use_avg_ref': ds_config.use_avg_ref,
+    'notch_freq': ds_config.notch_freq
+}, results)
     
 
 # SPLIT BY SUBJECT, NOT IDEAL
