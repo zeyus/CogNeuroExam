@@ -23,7 +23,7 @@ classifier_args:
   learning_rate: 0.001
 fit_args:
   batch_size: 6
-  epochs: 150
+  epochs: 10000
   balance_method: "undersample"
   train_log_interval: null
 use_gpu: True

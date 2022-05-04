@@ -2,7 +2,7 @@
 data/*
 data_nn/*
 output/*
-
+trained_models/*
 # VSCode
 .vscode/*
 

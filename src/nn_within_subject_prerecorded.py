@@ -9,6 +9,8 @@ from mne.channels import make_standard_montage
 from mne import set_config as mne_set_config
 from pathlib import Path
 
+import torch
+
 channel_rename_map = {
     'marker': 'STI101'
 }
@@ -48,7 +50,7 @@ def write_model_results(model_info, results):
         
 
 
-experiment = ExperimentConfig("./src/dn3_conf.yml")
+experiment = ExperimentConfig("./src/dn3_within_subject_conf.yml")
 
 if experiment.use_gpu:
     mne_set_config('MNE_USE_CUDA', 'True')
@@ -71,9 +73,9 @@ if isinstance(ds_config.data_min, bool) or isinstance(ds_config.data_max, bool):
 model_name = ''
 def make_model_and_process():
     global model_name
-    tidnet = EEGNetStrided.from_dataset(dataset, **experiment.model_args.as_dict())
-    model_name = type(tidnet).__name__
-    return StandardClassification(tidnet, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
+    nnm = EEGNetStrided.from_dataset(dataset, **experiment.model_args.as_dict())
+    model_name = type(nnm).__name__
+    return StandardClassification(nnm, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
 results = list()
 for subject_name in dataset.get_thinkers():
@@ -85,6 +87,8 @@ for subject_name in dataset.get_thinkers():
     training, _, testing = thinker.split(test_frac = ds_config.split_args.validation_fraction, validation_frac = 0)
     process = make_model_and_process()
     train_log, valid_log = process.fit(training_dataset=training, validation_dataset=testing, **experiment.fit_args.as_dict())
+    best_model = process.save_best()
+    torch.save(best_model, "trained_models/{}_{}_{}.pt".format(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), model_name, subject_name))
     results.append((subject_name, train_log, valid_log))
 
 write_model_results({
