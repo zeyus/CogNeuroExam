@@ -20,8 +20,11 @@ PROMPTS = {
 
 EEG_TAGS = {
     'left': 'l',
+    'left_off': 'z',
     'right': 'r',
+    'right_off': 'x',
     'neutral': 'n',
+    'neutral_off': 'c',
     'fixation': 'f',
     'ready': 'k',
 }

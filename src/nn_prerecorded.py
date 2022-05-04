@@ -1,7 +1,7 @@
 from datetime import datetime
 from dn3.configuratron import ExperimentConfig
 from dn3.trainable.processes import StandardClassification
-from dn3.trainable.models import TIDNet, EEGNet, EEGNetStrided
+from dn3.trainable.models import TIDNet, EEGNet, EEGNetStrided, BENDRClassifier
 from dn3.data.utils import get_dataset_max_and_min
 from mne.io import read_raw_fif, Raw
 from mne import rename_channels
@@ -68,9 +68,11 @@ if isinstance(ds_config.data_min, bool) or isinstance(ds_config.data_max, bool):
     print(dr)
     exit()
 # dataset.add_transform()
-
+model_name = ''
 def make_model_and_process():
-    tidnet = EEGNet.from_dataset(dataset, **experiment.model_args.as_dict())
+    global model_name
+    tidnet = EEGNetStrided.from_dataset(dataset, **experiment.model_args.as_dict())
+    model_name = type(tidnet).__name__
     return StandardClassification(tidnet, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
 results = list()
@@ -86,7 +88,7 @@ for subject_name in dataset.get_thinkers():
     results.append((subject_name, train_log, valid_log))
 
 write_model_results({
-    'model_type': 'EEGNet',
+    'model_type': model_name,
     'model_args': experiment.model_args.as_dict(),
     'classifier_args': experiment.classifier_args.as_dict(),
     'fit_args': experiment.fit_args.as_dict(),
