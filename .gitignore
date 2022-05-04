@@ -1,6 +1,7 @@
 # data files
 data/*
 data_nn/*
+output/*
 
 # VSCode
 .vscode/*
