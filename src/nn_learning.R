@@ -1,6 +1,6 @@
 library(tidyverse)
 
-df <- read.csv("output/details_a_2022-05-05_00-57-33_valid.csv")
+df <- read.csv("output/details_a_2022-05-05_10-22-12_valid.csv")
 
 head(df)
 
