@@ -2,7 +2,7 @@
 Specific configuration for the experiment / interface.
 """
 
-N_TRIALS = 40
+N_TRIALS = 30
 
 CONDS = {
   'left': 'left',
@@ -20,8 +20,11 @@ PROMPTS = {
 
 EEG_TAGS = {
     'left': 'l',
+    'left_off': 'z',
     'right': 'r',
+    'right_off': 'x',
     'neutral': 'n',
+    'neutral_off': 'c',
     'fixation': 'f',
     'ready': 'k',
 }

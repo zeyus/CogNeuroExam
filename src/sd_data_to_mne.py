@@ -3,8 +3,8 @@ import mne
 import numpy as np
 
 
-data_file = 'data/OBCI_16.TXT'
-data_file_clean = 'data/OBCI_16_clean.TXT'
+data_file = 'data/OBCI_22.TXT'
+data_file_clean = 'data/OBCI_22_clean.TXT'
 
 
 sfreq = 1000 # Hz
@@ -64,7 +64,8 @@ def hex_to_signed_8_bit_number(hexval):
   return hexval
   
 
-eeg_data = np.genfromtxt(data_file_clean, comments='%', delimiter=',', skip_header=2,
+eeg_data = np.genfromtxt(data_file_clean, comments='%', delimiter=',',
+  skip_header=2, skip_footer=1,
   usecols=(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17),
   dtype=np.float64,
   converters={
