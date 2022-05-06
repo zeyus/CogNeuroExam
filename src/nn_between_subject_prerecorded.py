@@ -3,16 +3,11 @@ from dn3.configuratron import ExperimentConfig
 from dn3.trainable.processes import StandardClassification
 from dn3.trainable.models import TIDNet, EEGNet, EEGNetStrided, BENDRClassifier
 from dn3.data.utils import get_dataset_max_and_min
-from mne.io import read_raw_fif, Raw
-from mne import rename_channels
-from mne.channels import make_standard_montage
 from mne import set_config as mne_set_config
 from nn.common import custom_raw_loader, write_model_results
-from pathlib import Path
-
 import torch
 
-experiment = ExperimentConfig("./src/nn_within_subject_conf.yml")
+experiment = ExperimentConfig("./src/dn3_between_subject_conf.yml")
 
 if experiment.use_gpu:
     mne_set_config('MNE_USE_CUDA', 'True')
@@ -40,6 +35,7 @@ def make_model_and_process():
     return StandardClassification(nnm, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
 results = list()
+
 
 
 for subject_name in dataset.get_thinkers():
@@ -73,5 +69,3 @@ write_model_results({
     'notch_freq': ds_config.notch_freq
 }, results)
     
-
-
