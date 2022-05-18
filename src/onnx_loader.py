@@ -11,7 +11,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 target_sr = 64
-sliding_win_size_seconds = 0.5
+sliding_win_size_seconds = 0.25
 sliding_step = int(sliding_win_size_seconds / 2)
 
 # order matters
@@ -45,6 +45,8 @@ chmap = DN3D1010(ch_names, ch_types, use_ch_idx, -0.3, 0.3)
 eeg_source = EEG(dummyBoard = True)
 eeg_sr = eeg_source.sampling_rate
 eeg_filter = Filtering(use_ch_idx, eeg_sr)
+n_samples = int(sliding_win_size_seconds * target_sr)
+print(n_samples)
 eeg_source.start_stream()
 sleep(sliding_win_size_seconds)
 
@@ -53,18 +55,21 @@ data = np.zeros((len(ch_idx), 0))
 while True:
   # already throw away irrelevant channels
   data_chunk = eeg_source.poll()[ch_idx, :]
-  data = np.concatenate((data, chmap.zero_discard(data_chunk)), axis=1)
+  data = np.concatenate((data, chmap.zero_discard(data_chunk)), axis=1) # concat may be memory inefficient 
   if data.shape[1] > eeg_sr * sliding_win_size_seconds:
     # bandpass, then downsample
-    data = eeg_filter.bandpass(data, 8, 32)
-    print(data.shape)
-    data = eeg_filter.resample(data.T, target_sr)
-
+    data_predict = eeg_filter.bandpass(data, 8, 32)
+    print(n_samples)
+    data_predict = eeg_filter.resample(data_predict.T, target_sr).T
+    print(data_predict.shape)
     # do NOT keep this hardcoded
     # in fact, drop  useless channels earlier
     # even turn them off on board if possible.
-    data_predict = chmap(data)
+    data_predict = data_predict[:, :n_samples]
+    data_predict = chmap(data_predict)
+    # fake batch
+    data_predict = np.expand_dims(data_predict, axis=0)
     print(data_predict.shape)
-    print(model.predict())
+    print(model.predict(data_predict))
 
   sleep(sliding_step)

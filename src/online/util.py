@@ -35,7 +35,7 @@ class OnnxOnline:
     """
     Predict the class of the input x.
     """
-    return self.session.run(None, {'X': x})[0]
+    return self.session.run(None, {'input': x})[0]
 
 
 class dotdict(dict):
@@ -67,7 +67,7 @@ class DN3D1010(MappingDeep1010):
 
 
     x = super().__call__(torch.from_numpy(x))
-    return x
+    return x.numpy()
 
   def _mne_map(self, x: str) -> int:
     if x == 'eeg':
