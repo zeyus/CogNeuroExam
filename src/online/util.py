@@ -35,7 +35,7 @@ class OnnxOnline:
     """
     Predict the class of the input x.
     """
-    return self.session.run(None, {'input': x})[0]
+    return self.session.run(None, {'input': x})
 
 
 class dotdict(dict):
