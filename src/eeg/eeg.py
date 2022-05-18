@@ -7,7 +7,8 @@ import numpy as np
 from scipy.signal import savgol_filter
 import sounddevice as sd
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
-from brainflow.data_filter import DataFilter, FilterTypes, DetrendOperations, NoiseTypes
+from brainflow.data_filter import DataFilter, FilterTypes, DetrendOperations, NoiseTypes, AggOperations
+import samplerate
 import pyxdf
 import pandas as pd
 import logging
@@ -203,7 +204,7 @@ class CytonBoardMode(Enum):
 class EEG(object):
   sdcard = False
   is_prepared = False
-  def __init__(self, dummyBoard: bool = False, emg_channels: List[int] = [], serial_port = 'COM3') -> None:
+  def __init__(self, dummyBoard: bool = False, emg_channels: List[int] = [], serial_port: str = 'COM3', window_size: int = 4) -> None:
     self.params = BrainFlowInputParams()
     self.serial_port = serial_port
     self.curves = []
@@ -216,7 +217,7 @@ class EEG(object):
     self.exg_channels = BoardShim.get_exg_channels(self.board_id)
     self.accel_channels = BoardShim.get_accel_channels(self.board_id)
     self.sampling_rate = BoardShim.get_sampling_rate(self.board_id)
-    self.window_size = 4
+    self.window_size = window_size
     self.num_points = self.window_size * self.sampling_rate
 
     # self.start_stream()
@@ -484,13 +485,29 @@ class Filtering(object):
   def __init__(self, exg_channels: List[int], sampling_rate: int) -> None:
     self.exg_channels = exg_channels
     self.sampling_rate = sampling_rate
+    self.converter = 'sinc_best' # or 'sinc_fastest'
 
   def butterworth_lowpass(self, data: NDArray[Float64], cutoff = 49.0) -> NDArray[Float64]:
     for _, channel in enumerate(self.exg_channels):
       # DataFilter.detrend(data[channel], DetrendOperations.CONSTANT.value)
-      DataFilter.perform_lowpass(data[channel], self.sampling_rate, cutoff, 1,
+      DataFilter.perform_lowpass(data[channel], self.sampling_rate, cutoff, 2,
           FilterTypes.BUTTERWORTH.value, 0)
     return data
+  
+  def bandpass(self, data: NDArray[Float64], lowcut = 1.0, highcut = 49.0, order = 4) -> NDArray[Float64]:
+    c_freq = lowcut + ((highcut - lowcut) / 2)
+    bw = (highcut - lowcut)
+    for _, channel in enumerate(self.exg_channels):
+      DataFilter.perform_bandpass(data[channel], self.sampling_rate, c_freq, bw, order,
+          FilterTypes.BUTTERWORTH.value, 0)
+    return data
+
+  def resample(self, data: NDArray[Float64], new_rate: int) -> NDArray[Float64]:
+    """
+    Note, brainflow data must be transformed...
+    """
+    return samplerate.resample(data, new_rate / self.sampling_rate, self.converter)
+    
 
   def filter_50hz(self, data: NDArray[Float64]) -> NDArray[Float64]:
     for _, channel in enumerate(self.exg_channels):

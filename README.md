@@ -19,6 +19,13 @@ OBCI_22 -> Alex, 2022-05-05 (l/r imagine)
 
 
 
+#### Reqs
+
+Experiment : conda env conda_env_data_collection.yml , essentially psychopy with some EEG tools
+Data analysis / format conversion : conda_env_analysis.yml (maybe not up to date), MNE ...
+Model training: pytorch, MNE, dn3 (zeyus fork), ...
+Model deployment: TBC (onnx, pytorch...)
+
 
 
 #### Other stuff
@@ -60,3 +67,10 @@ stop timestamping:
 
 stop SD card logging:
 `j`
+
+
+ONNX RUNTIME
+`build.bat --skip_submodule_sync --use_cuda --cuda_version=11.5 --cuda_home="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5" --cudnn_home="C:/Program Files/NVIDIA/CUDNN/v8.3" --enable_memory_profile --parallel=8 --enable_cuda_profiling --config=Release`
+
+
+
