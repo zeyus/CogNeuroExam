@@ -13,6 +13,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 target_sr = 64
 sliding_win_size_seconds = 0.25
 sliding_step = int(sliding_win_size_seconds / 2)
+batch_size = 1
 
 # order matters
 
@@ -62,6 +63,7 @@ while True:
     # bandpass, then downsample
     data_predict = eeg_filter.bandpass(data, 8, 32)
     data_predict = eeg_filter.resample(data_predict.T, target_sr).T
+    
     # do NOT keep this hardcoded
     # in fact, drop  useless channels earlier
     # even turn them off on board if possible.
@@ -76,6 +78,5 @@ while True:
     print('Predicted Label: ')
     print(out_labels[preds.argmax()])
     print(f'r:{preds[0]}, n:{preds[1]}')
-    
 
   sleep(sliding_step)
