@@ -74,8 +74,8 @@ if __name__ == "__main__":
         print("Exporting ONNX model to: {}".format(onnx_file))
         torch.onnx.export(
             model=torch_model,
-            # could add batches here
-            args=torch.randn(6, 90, 16, device=device),
+            # (batches, channels, n_samples)
+            args=torch.randn(6, 90, round(ds_config.tlen * experiment.global_sfreq), device=device),
             f=onnx_file,
             export_params=True,
             opset_version=16, #15, # 16 is latest but deepsparse dev currently support <=15

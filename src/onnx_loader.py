@@ -10,6 +10,25 @@ import numpy as np
 
 
 
+# need to adjust this to print N meters, 1 per label, with range -1 to 1 that update with each prediction
+def printMeters(items, pad = 5, length = 30, fill = '█'):
+  
+  n_items = len(items) # 3
+  len_per_item = length # floor(length / n_items) # 30 / 3 = 10
+  meter_out = '\r\033[s\033[0m'
+  reset = '\033[0m'
+  print(f'\033[{n_items}A', end = '')
+  for value, min, max, prefix, selected, n_recent in items: # (0.5, -1, 1, '', '')
+    suffix = '\033[1;96m{}\033[0m' if selected  else '{}'
+    suffix = suffix.format(('*' * n_recent).ljust(pad))
+    decorate = '\033[1;32m' if value > 0 else '\033[1;31m'
+    p_pos = (value - min) / (max - min) # (0.5 - -1) / (1 - -1) = 0.75
+    pos = int(len_per_item * p_pos) # 10 * 0.75 = 7.5 -> 7
+    val = ("{:5.2f}").format(value)
+    bar = '-' * (pos-1) + decorate + fill + reset + '-' * (len_per_item - pos)
+    meter_out += f'\r\033[1B ‖ {prefix} |{bar}| {decorate}{val}{reset} ‖ {suffix}'
+  print(meter_out, end = "\033[u")
+
 logging.basicConfig()
 # set to logging.INFO if you want to see less debugging output
 logging.getLogger().setLevel(logging.DEBUG)
@@ -101,6 +120,18 @@ data = np.zeros((len(ch_idx), 0))
 sample_start_offset = 0
 # this window code is garbage, it's just approximating and deleting from the original data
 # better to base slices on original sample rate i think.
+recent_preds = [
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+]
 while True:
   # ch_idx will get ALL channels
   data_chunk = eeg_source.poll()[ch_idx, :]
@@ -122,7 +153,7 @@ while True:
     leftover_samples = (data_predict.shape[1] - window_samples) % sliding_step_samples
     # if leftover_samples > 0:
     #   max_strides += 1
-    logging.debug('Stride/window start time: {}, strides: {}'.format(sample_start_offset / target_sr, max_strides))
+    # logging.debug('Stride/window start time: {}, strides: {}'.format(sample_start_offset / target_sr, max_strides))
     predicted_label = None
     for stride in range(max_strides + 1):
       stride_by = sliding_step_samples
@@ -138,11 +169,20 @@ while True:
       preds = model.predict(data_stride)
       # no batch atm
       preds = preds[0][0]
-      predicted_label = out_labels[preds.argmax()]
+      pr_idx = preds.argmax()
+      recent_preds.pop(0)
+      recent_preds.append(pr_idx)
+      predicted_label = out_labels[pr_idx]
       if not last_pred_label == predicted_label:
-        logging.info("Prediction: {}".format(predicted_label))
-        logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
+        # logging.info("Prediction: {}".format(predicted_label))
+        # logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
         last_pred_label = predicted_label
+      
+      printMeters([
+        (preds[0][0], -1, 1, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
+        (preds[1][0], -1, 1, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
+        (preds[2][0], -1, 1, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+      ], 10)
     
     # for removing from original data
     samples_completed = (data_predict.shape[1] - window_samples - leftover_samples)
