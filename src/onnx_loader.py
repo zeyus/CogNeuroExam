@@ -33,12 +33,16 @@ logging.basicConfig()
 # set to logging.INFO if you want to see less debugging output
 logging.getLogger().setLevel(logging.DEBUG)
 
-target_sr = 64
-sliding_win_size_seconds = 0.25
+target_sr = 100
+sliding_win_size_seconds = 0.3
 window_samples = int(target_sr * sliding_win_size_seconds)
 # our striding will depend on perfomance of inference
 sliding_step_samples = 1
 batch_size = 1
+data_scale_min = -0.0248
+data_scale_max = 114.0
+sleep_more = 0
+update_meters_every = 10
 
 # order matters
 
@@ -64,13 +68,13 @@ use_ch_idx = [x for x in range(len(eeg_ch_names)) if eeg_ch_names[x] in use_ch]
 
 # Load the ONNX model
 # model = onnx.load("trained_models/2022-05-08_21-38-01_EEGNetStridedOnnxCompat_a.onnx")
-model_path = "trained_models/2022-05-19_14-43-02_EEGNetStridedOnnxCompat_l.onnx"
+model_path = "trained_models/2022-05-19_18-58-05_EEGNetStridedOnnxCompat_l.onnx"
 
 # Check that the model is well formed
 # onnx.checker.check_model(model)
 model = OnnxOnline(model_path)
 
-chmap = DN3D1010(ch_names, ch_types, use_ch_idx, -0.0247, 0.0192)
+chmap = DN3D1010(ch_names, ch_types, use_ch_idx, data_scale_min, data_scale_max)
 
 
 # labels
@@ -132,6 +136,7 @@ recent_preds = [
   '',
   '',
 ]
+preds_since_print = 0
 while True:
   # ch_idx will get ALL channels
   data_chunk = eeg_source.poll()[ch_idx, :]
@@ -168,21 +173,23 @@ while True:
       data_stride = np.expand_dims(data_stride, axis=0)
       preds = model.predict(data_stride)
       # no batch atm
-      preds = preds[0][0]
+      preds = np.average(preds[0][0], axis=1)
       pr_idx = preds.argmax()
       recent_preds.pop(0)
       recent_preds.append(pr_idx)
       predicted_label = out_labels[pr_idx]
+      preds_since_print += 1
       if not last_pred_label == predicted_label:
         # logging.info("Prediction: {}".format(predicted_label))
         # logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
         last_pred_label = predicted_label
-      
-      printMeters([
-        (preds[0][0], -1, 1, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
-        (preds[1][0], -1, 1, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
-        (preds[2][0], -1, 1, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
-      ], 10)
+      if preds_since_print >= update_meters_every:
+        printMeters([
+          (preds[0], -100, 100, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
+          (preds[1], -100, 100, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
+          (preds[2], -100, 100, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+        ], 10, 100)
+        preds_since_print = 0
     
     # for removing from original data
     samples_completed = (data_predict.shape[1] - window_samples - leftover_samples)
@@ -193,4 +200,4 @@ while True:
     # now remove data from original data
     data = data[:, slice_start:]
   # sleep at least long enough for next data chunk
-  sleep(1 * sliding_step_samples / target_sr)
+  sleep(sleep_more + (sliding_step_samples / target_sr))
