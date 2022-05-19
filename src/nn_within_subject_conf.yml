@@ -35,8 +35,8 @@ datasets:
     filename_format: "grasp_{subject}_{session}_raw"
     tmin: -0.05
     tlen: 0.25
-    data_min: 114.0
-    data_max: -0.0248
+    data_min: -0.0247
+    data_max: 0.0192
     hpf: 8
     lpf: 32
     use_avg_ref: True

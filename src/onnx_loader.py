@@ -18,7 +18,7 @@ target_sr = 64
 sliding_win_size_seconds = 0.25
 window_samples = int(target_sr * sliding_win_size_seconds)
 # our striding will depend on perfomance of inference
-sliding_step_samples = 12
+sliding_step_samples = 1
 batch_size = 1
 
 # order matters
@@ -45,13 +45,13 @@ use_ch_idx = [x for x in range(len(eeg_ch_names)) if eeg_ch_names[x] in use_ch]
 
 # Load the ONNX model
 # model = onnx.load("trained_models/2022-05-08_21-38-01_EEGNetStridedOnnxCompat_a.onnx")
-model_path = "trained_models/2022-05-19_13-57-53_EEGNetStridedOnnxCompat_l.onnx"
+model_path = "trained_models/2022-05-19_14-43-02_EEGNetStridedOnnxCompat_l.onnx"
 
 # Check that the model is well formed
 # onnx.checker.check_model(model)
 model = OnnxOnline(model_path)
 
-chmap = DN3D1010(ch_names, ch_types, use_ch_idx, -0.3, 0.3)
+chmap = DN3D1010(ch_names, ch_types, use_ch_idx, -0.0247, 0.0192)
 
 
 # labels
@@ -86,7 +86,10 @@ eeg_source = EEG(dummyBoard = True)
 eeg_sr = eeg_source.sampling_rate
 sr_scale_factor = target_sr / eeg_sr
 logging.info("Resample scale factor: {}".format(sr_scale_factor))
-logging.info("Samples in window: {}".format(window_samples))
+logging.info("Samples in window: {}, window size in time: {}ms".format(window_samples, sliding_win_size_seconds * 1000))
+logging.info("Using channels: {}".format(use_ch))
+logging.info("Predicting every {} samples (every {}ms)".format(sliding_step_samples, sliding_step_samples / target_sr * 1000))
+logging.info("Sample rates: - Source: {}, - Target: {}".format(eeg_sr, target_sr))
 eeg_filter = Filtering(use_ch_idx, eeg_sr)
 eeg_source.start_stream()
 sleep(sliding_win_size_seconds)
