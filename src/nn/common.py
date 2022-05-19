@@ -10,7 +10,7 @@ from dn3.trainable.models import EEGNetStrided
 mne_set_config('MNE_STIM_CHANNEL', 'STI101')
 
 channel_rename_map = {
-    'marker': 'STI101'
+    'marker': 'EX1'
 }
 
 # custom loader to allow setting montage

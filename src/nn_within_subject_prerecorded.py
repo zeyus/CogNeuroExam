@@ -48,8 +48,9 @@ if __name__ == "__main__":
 
     cur_date = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     for subject_name in dataset.get_thinkers():
-        
-        print("Processiong subject: {}".format(subject_name))
+        if not subject_name == 'l':
+            continue
+        print("Processing subject: {}".format(subject_name))
         thinker = dataset.thinkers[subject_name]
         # print(thinker.get_targets())
         # exit()

@@ -44,9 +44,12 @@ datasets:
     events:
       114: "r"
       110: "n"
+      108: "l"
     picks:
       - "C3"
       - "P3"
+      - "C4"
+      - "P4"
     split_args:
       validation_fraction: 0.35
     

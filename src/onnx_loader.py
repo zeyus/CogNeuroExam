@@ -30,7 +30,7 @@ ch_names = config.data.BCI_CHANNEL_NAMES
 ch_idx = config.data.BCI_CHANNEL_INDEXES
 # use_ch = ['P3', 'P4', 'C3', 'C4']
 # which channels we use to feed the model
-use_ch = ['C3', 'P3']
+use_ch = ['C3', 'P3', 'C4', 'P4']
 
 # index of all EEG channels (not EMG, stim, etc)
 eeg_ch_idx = [x for x in range(len(ch_types)) if ch_types[x] == 'eeg']
@@ -45,7 +45,7 @@ use_ch_idx = [x for x in range(len(eeg_ch_names)) if eeg_ch_names[x] in use_ch]
 
 # Load the ONNX model
 # model = onnx.load("trained_models/2022-05-08_21-38-01_EEGNetStridedOnnxCompat_a.onnx")
-model_path = "trained_models/2022-05-18_19-17-46_EEGNetStridedOnnxCompat_a.onnx"
+model_path = "trained_models/2022-05-19_13-57-53_EEGNetStridedOnnxCompat_l.onnx"
 
 # Check that the model is well formed
 # onnx.checker.check_model(model)
@@ -55,7 +55,7 @@ chmap = DN3D1010(ch_names, ch_types, use_ch_idx, -0.3, 0.3)
 
 
 # labels
-out_labels = ["r", "n"]
+out_labels = ["r", "n", "l"]
 
 #@todo: implement multithreading for collecting data so processing happens in parallel
 def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list, max_dur_mins: int = 60):
@@ -138,7 +138,7 @@ while True:
       predicted_label = out_labels[preds.argmax()]
       if not last_pred_label == predicted_label:
         logging.info("Prediction: {}".format(predicted_label))
-        logging.info(f'r:{preds[0]}, n:{preds[1]}')
+        logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
         last_pred_label = predicted_label
     
     # for removing from original data
