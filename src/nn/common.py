@@ -4,12 +4,13 @@ from mne.channels import make_standard_montage
 from mne import set_config as mne_set_config
 from pathlib import Path
 from datetime import datetime
+from dn3.trainable.models import EEGNetStrided
 
 
 mne_set_config('MNE_STIM_CHANNEL', 'STI101')
 
 channel_rename_map = {
-    'marker': 'STI101'
+    'marker': 'EX1'
 }
 
 # custom loader to allow setting montage
@@ -43,3 +44,14 @@ def write_model_results(model_info, results):
             f.write(f'Best loss: {best_loss}\n')
             f.write(f'Best accuracy: {best_accuracy}\n')
             f.write('\n')
+
+class EEGNetStridedOnnxCompat(EEGNetStrided):
+    # def __init__(self, *args, **kwargs):
+    #     super(EEGNetStrided, self).__init__(*args, **kwargs)
+
+    def features_forward(self, x, *args, **kwargs):
+        return super().features_forward(x)
+
+    # @classmethod
+    # def from_dataset(cls, *args, **kwargs):
+    #     return super(EEGNetStrided, cls).from_dataset(*args, **kwargs)

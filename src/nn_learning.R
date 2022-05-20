@@ -1,13 +1,15 @@
 library(tidyverse)
 
-df <- read.csv("output/details_a_2022-05-05_10-22-12_valid.csv")
+df <- read.csv("output/details_l_2022-05-19_19-22-17_valid.csv")
 
 head(df)
 
 df %>%
   ggplot(aes(x = epoch)) +
-  geom_line(aes(y = loss), color = "red") +
-  geom_line(aes(y = Accuracy), color = "blue") +
-  geom_point(aes(y = loss)) +
-  geom_point(aes(y = Accuracy)) +
-  labs(title = "Loss (red) and Accuracy (blue) by Epoch")
+  geom_line(aes(y = loss, color = loss)) +
+  scale_color_gradient(low="blue", high="red")
+
+df %>%
+  ggplot(aes(x = epoch)) +
+  geom_line(aes(y = Accuracy, color = Accuracy)) +
+  scale_color_gradient(low="blue", high="red")

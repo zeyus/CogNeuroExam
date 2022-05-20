@@ -36,6 +36,9 @@ def make_model_and_process():
 
 results = list()
 
+print(results)
+print("Average accuracy: {:.2%}".format(sum(results)/len(results)))
+
 
 
 for subject_name in dataset.get_thinkers():

@@ -28,7 +28,7 @@ COLS = [
 BCI_CHANNEL_TYPES = ['misc'] + ['eeg'] * 13 + ['emg'] + ['eeg'] * 2 + ['misc'] * 3 + ['stim']
 
 # Channel names orig: ["Fp1,Fp2,C3,C4,P7,P8,O1,O2,F7,F8,F3,F4,T7,T8,P3,P4"]
-BCI_CHANNEL_NAMES = ["pkg","Fp1","Fp2","C3","C4","P7","P8","O1","O2","F7","F8","F3","F4","T7","EMG1","P3","P4","AX","AY","AZ","stim"]
+BCI_CHANNEL_NAMES = ["pkg","Fp1","Fp2","C3","C4","P7","P8","O1","O2","F7","F8","F3","F4","T7","EMG1","P3","P4","AX","AY","AZ","EX1"]
 
 # mainly to slice the data
 BCI_CHANNEL_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 31]
