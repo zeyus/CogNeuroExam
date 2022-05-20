@@ -4,7 +4,7 @@ import threading
 from time import sleep
 from turtle import left
 from online.util import OnnxOnline, DN3D1010
-from eeg.eeg import EEG, Filtering
+from eeg.eeg import EEG, Filtering, CytonSampleRate
 from psypy import config
 import numpy as np
 
@@ -41,8 +41,10 @@ sliding_step_samples = 1
 batch_size = 1
 data_scale_min = -0.0248
 data_scale_max = 114.0
+# data_scale_min = None
+# data_scale_max = None
 sleep_more = 0
-update_meters_every = 10
+update_meters_every = 2
 
 # order matters
 
@@ -105,7 +107,8 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
 
 logging.info("Note, only changes in predictions will be printed out...")
 
-eeg_source = EEG(dummyBoard = True)
+eeg_source = EEG(dummyBoard = False, emg_channels = [14])
+eeg_source.start_stream(sdcard = False, sr = CytonSampleRate.SR_250)
 eeg_sr = eeg_source.sampling_rate
 sr_scale_factor = target_sr / eeg_sr
 logging.info("Resample scale factor: {}".format(sr_scale_factor))
@@ -114,7 +117,6 @@ logging.info("Using channels: {}".format(use_ch))
 logging.info("Predicting every {} samples (every {}ms)".format(sliding_step_samples, sliding_step_samples / target_sr * 1000))
 logging.info("Sample rates: - Source: {}, - Target: {}".format(eeg_sr, target_sr))
 eeg_filter = Filtering(use_ch_idx, eeg_sr)
-eeg_source.start_stream()
 sleep(sliding_win_size_seconds)
 last_pred_label = None
 # need to change this to a buffer system
