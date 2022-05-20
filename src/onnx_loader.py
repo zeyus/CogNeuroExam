@@ -21,11 +21,12 @@ def printMeters(items, pad = 5, length = 30, fill = '█'):
   for value, min, max, prefix, selected, n_recent in items: # (0.5, -1, 1, '', '')
     suffix = '\033[1;96m{}\033[0m' if selected  else '{}'
     suffix = suffix.format(('*' * n_recent).ljust(pad))
-    decorate = '\033[1;32m' if value > 0 else '\033[1;31m'
+    decorate = '\033[1;32m' if min < 0 and value > 0 else '' if min > 0 else '\033[1;31m'
     p_pos = (value - min) / (max - min) # (0.5 - -1) / (1 - -1) = 0.75
     pos = int(len_per_item * p_pos) # 10 * 0.75 = 7.5 -> 7
     val = ("{:5.2f}").format(value)
     bar = '-' * (pos-1) + decorate + fill + reset + '-' * (len_per_item - pos)
+    prefix = prefix.rjust(13)
     meter_out += f'\r\033[1B ‖ {prefix} |{bar}| {decorate}{val}{reset} ‖ {suffix}'
   print(meter_out, end = "\033[u")
 
@@ -37,14 +38,14 @@ target_sr = 100
 sliding_win_size_seconds = 0.3
 window_samples = int(target_sr * sliding_win_size_seconds)
 # our striding will depend on perfomance of inference
-sliding_step_samples = 1
+sliding_step_samples = 10
 batch_size = 1
 data_scale_min = -0.0248
 data_scale_max = 114.0
 # data_scale_min = None
 # data_scale_max = None
 sleep_more = 0
-update_meters_every = 2
+update_meters_every = 1
 
 # order matters
 
@@ -80,7 +81,7 @@ chmap = DN3D1010(ch_names, ch_types, use_ch_idx, data_scale_min, data_scale_max)
 
 
 # labels
-out_labels = ["r", "n", "l"]
+out_labels = ["Right", "Neutral", "Left"]
 
 #@todo: implement multithreading for collecting data so processing happens in parallel
 def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list, max_dur_mins: int = 60):
@@ -107,7 +108,7 @@ def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: thread
 
 logging.info("Note, only changes in predictions will be printed out...")
 
-eeg_source = EEG(dummyBoard = False, emg_channels = [14])
+eeg_source = EEG(dummyBoard = True, emg_channels = [14])
 eeg_source.start_stream(sdcard = False, sr = CytonSampleRate.SR_250)
 eeg_sr = eeg_source.sampling_rate
 sr_scale_factor = target_sr / eeg_sr
@@ -190,6 +191,7 @@ while True:
           (preds[0], -100, 100, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
           (preds[1], -100, 100, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
           (preds[2], -100, 100, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+          (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
         ], 10, 100)
         preds_since_print = 0
     
