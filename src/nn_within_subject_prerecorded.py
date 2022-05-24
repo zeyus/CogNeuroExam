@@ -8,7 +8,7 @@ from mne.io import read_raw_fif, Raw
 from mne import rename_channels
 from mne.channels import make_standard_montage
 from mne import set_config as mne_set_config
-from nn.common import custom_raw_loader, write_model_results, EEGNetStridedOnnxCompat
+from nn.common import custom_raw_loader, write_model_results, EEGNetStridedOnnxCompat, EEGNetOnnxCompat
 from pathlib import Path
 
 import torch
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     model_name = ''
     def make_model_and_process():
         global model_name
-        nnm = EEGNetStridedOnnxCompat.from_dataset(dataset, **experiment.model_args.as_dict())
+        nnm = EEGNetOnnxCompat.from_dataset(dataset, **experiment.model_args.as_dict())
         model_name = type(nnm).__name__
         return StandardClassification(nnm, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
@@ -101,7 +101,8 @@ if __name__ == "__main__":
         'tmin': ds_config.tmin,
         'tlen': ds_config.tlen,
         'use_avg_ref': ds_config.use_avg_ref,
-        'notch_freq': ds_config.notch_freq
+        'notch_freq': ds_config.notch_freq,
+        'events': ds_config.events
     }, results)
         
 

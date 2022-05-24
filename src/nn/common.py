@@ -1,10 +1,12 @@
 from mne.io import read_raw_fif, Raw
-from mne import rename_channels
+from mne import rename_channels, merge_events, find_events
 from mne.channels import make_standard_montage
 from mne import set_config as mne_set_config
 from pathlib import Path
 from datetime import datetime
-from dn3.trainable.models import EEGNetStrided
+from dn3.configuratron import DatasetConfig
+from dn3.trainable.models import EEGNetStrided, EEGNet
+import numpy as np
 
 
 mne_set_config('MNE_STIM_CHANNEL', 'STI101')
@@ -14,13 +16,32 @@ channel_rename_map = {
 }
 
 # custom loader to allow setting montage
-def custom_raw_loader(fname: Path, preload=True) -> Raw:
+def custom_raw_loader(ds_conf: DatasetConfig,fname: Path) -> Raw:
     raw = read_raw_fif(fname, preload=False, verbose=False)
     rename_channels(raw.info, channel_rename_map)
     montage = make_standard_montage('standard_1020')
     raw.set_montage(montage, verbose=False, on_missing='ignore')
-    if preload:
-        raw.load_data()
+    raw.load_data()
+    if not hasattr(ds_conf, 'event_prep') or ds_conf.event_prep.do_not_run:
+        return raw
+    
+    off_events = ds_conf.event_prep.off_events
+    # combine_events = [110, 111, 113]
+    combine_events = ds_conf.event_prep.combine_events
+    combined_id = ds_conf.event_prep.combined_event_id
+    # offset "off events"
+    move_off_events_ms = ds_conf.event_prep.move_off_events_ms
+
+    events = find_events(raw, stim_channel='EX1')
+    if not move_off_events_ms == 0:
+        event_ids = events[:, 2]
+        event_ids_idx = np.argwhere((event_ids == off_events[0]) | (event_ids == off_events[1]))
+        events[:, 0][event_ids_idx] = events[:, 0][event_ids_idx] + move_off_events_ms
+        events[:, 0] = events[np.argsort(events[:, 0]), 0]
+    # create a singular combined event if required event
+    if len(combine_events) > 0:
+        events = merge_events(events, ids=combine_events, new_id=combined_id, replace_events=True)
+    raw.add_events(events, stim_channel='EX1', replace=True)
     return raw
 
 
@@ -46,6 +67,18 @@ def write_model_results(model_info, results):
             f.write('\n')
 
 class EEGNetStridedOnnxCompat(EEGNetStrided):
+    # def __init__(self, *args, **kwargs):
+    #     super(EEGNetStrided, self).__init__(*args, **kwargs)
+
+    def features_forward(self, x, *args, **kwargs):
+        return super().features_forward(x)
+
+    # @classmethod
+    # def from_dataset(cls, *args, **kwargs):
+    #     return super(EEGNetStrided, cls).from_dataset(*args, **kwargs)
+
+
+class EEGNetOnnxCompat(EEGNet):
     # def __init__(self, *args, **kwargs):
     #     super(EEGNetStrided, self).__init__(*args, **kwargs)
 

@@ -38,9 +38,9 @@ target_sr = 100
 sliding_win_size_seconds = 0.3
 window_samples = int(target_sr * sliding_win_size_seconds)
 # our striding will depend on perfomance of inference
-sliding_step_samples = 10
+sliding_step_samples = 1
 batch_size = 1
-data_scale_min = -0.0248
+data_scale_min = -0.0002
 data_scale_max = 114.0
 # data_scale_min = None
 # data_scale_max = None
@@ -71,7 +71,7 @@ use_ch_idx = [x for x in range(len(eeg_ch_names)) if eeg_ch_names[x] in use_ch]
 
 # Load the ONNX model
 # model = onnx.load("trained_models/2022-05-08_21-38-01_EEGNetStridedOnnxCompat_a.onnx")
-model_path = "trained_models/2022-05-19_18-58-05_EEGNetStridedOnnxCompat_l.onnx"
+model_path = "trained_models/2022-05-22_10-14-28_EEGNetStridedOnnxCompat_l.onnx"
 
 # Check that the model is well formed
 # onnx.checker.check_model(model)
@@ -79,9 +79,13 @@ model = OnnxOnline(model_path)
 
 chmap = DN3D1010(ch_names, ch_types, use_ch_idx, data_scale_min, data_scale_max)
 
-
+      # 108: "l"
+      # 110: "n"
+      # 111: "o"
+      # 113: "q"
+      # 114: "r"
 # labels
-out_labels = ["Right", "Neutral", "Left"]
+out_labels = ["Left+", "Neutral", "Right-", "Left-", "Right+"]
 
 #@todo: implement multithreading for collecting data so processing happens in parallel
 def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list, max_dur_mins: int = 60):
@@ -188,9 +192,11 @@ while True:
         last_pred_label = predicted_label
       if preds_since_print >= update_meters_every:
         printMeters([
-          (preds[0], -100, 100, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
-          (preds[1], -100, 100, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
-          (preds[2], -100, 100, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+          (preds[0], -10, 10, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
+          (preds[3], -10, 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
+          (preds[1], -10, 10, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
+          (preds[4], -10, 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
+          (preds[2], -10, 10, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
           (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
         ], 10, 100)
         preds_since_print = 0
