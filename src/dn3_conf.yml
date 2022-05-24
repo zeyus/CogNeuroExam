@@ -1,26 +1,24 @@
 Configuratron:
-  sfreq: 150
+  sfreq: 64
   preload: True
   deep1010: True
 model_args:
-  do: 0.45
-  s_growth: 24
-  t_filters: 32
-  pooling: 20
-  temp_layers: 6
-  spat_layers: 6
-  temp_span: 0.05
-  bottleneck: 3
+  do: 0.25
+  pooling: 8
+  F1: 8
+  D: 2
+  t_len: 24
+  F2: 16
 classifier_args:
-  l2_weight_decay: 0.05
+  l2_weight_decay: 0.08
   label_smoothing: null
-  learning_rate: 0.00001
+  learning_rate: 0.001
 fit_args:
   batch_size: 7
-  epochs: 200
+  epochs: 60
   balance_method: "undersample"
   train_log_interval: null
-use_gpu: True
+use_gpu: False
 datasets:
   clencher:
     dataset_id: 1
@@ -28,19 +26,20 @@ datasets:
     toplevel: "./data_nn/"
     filename_format: "grasp_{subject}_{session}_raw"
     tmin: -0.1
-    tlen: 4.0
-    data_min: -0.0951
-    data_max: 114.0
-    hpf: 0.1
-    lpf: 49
+    tlen: 0.5
+    data_min: 0.0322
+    data_max: -0.0248
+    hpf: 8
+    lpf: 32
     use_avg_ref: True
     notch_freq: 50
     events:
       114: "r"
+      #108: "l"
       110: "n"
     picks:
       - "C3"
-      - "P3"
+      - "C4"
     split_args:
       validation_fraction: 0.35
     

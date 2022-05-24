@@ -1,6 +1,6 @@
 from dn3.configuratron import ExperimentConfig
 from dn3.trainable.processes import StandardClassification
-from dn3.trainable.models import TIDNet
+from dn3.trainable.models import TIDNet, EEGNet, EEGNetStrided
 from dn3.data.utils import get_dataset_max_and_min
 from mne.io import read_raw_fif, Raw
 from mne import rename_channels
@@ -23,9 +23,7 @@ def custom_raw_loader(fname: Path, preload=True) -> Raw:
         raw.load_data()
     return raw
 
-
-
-experiment = ExperimentConfig("./src/dn3_conf.yml")
+experiment = ExperimentConfig("./src/latest_config.yml")
 
 if experiment.use_gpu:
     mne_set_config('MNE_USE_CUDA', 'True')
@@ -47,8 +45,10 @@ if isinstance(ds_config.data_min, bool) or isinstance(ds_config.data_max, bool):
 # dataset.add_transform()
 
 def make_model_and_process():
-    tidnet = TIDNet.from_dataset(dataset, **experiment.model_args.as_dict())
-    return StandardClassification(tidnet, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
+    
+    #tidnet = TIDNet.from_dataset(dataset, **experiment.model_args.as_dict())
+    eegnet = EEGNet.from_dataset(dataset, **experiment.model_args.as_dict())
+    return StandardClassification(eegnet, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
 # results = list()
 for subject_name in dataset.get_thinkers():
@@ -60,7 +60,6 @@ for subject_name in dataset.get_thinkers():
     training, _, testing = thinker.split(test_frac = ds_config.split_args.validation_fraction, validation_frac = 0)
     process = make_model_and_process()
     process.fit(training_dataset=training, validation_dataset=testing, **experiment.fit_args.as_dict())
-    
 
 # SPLIT BY SUBJECT, NOT IDEAL
 # for training, validation, test in dataset.lmso(ds_config.train_params.folds):

@@ -1,0 +1,54 @@
+Configuratron:
+  sfreq: 100
+  preload: True
+  deep1010: True
+model_args:
+  #context_do: 0.15
+  do: 0.35
+  t_len: 18
+  D: 2
+  #stride_width: 1
+  F1: 8
+  F2: 16
+  # s_growth: 24
+  # t_filters: 32
+  pooling: 5
+  # temp_layers: 8
+  # spat_layers: 8
+  # temp_span: 0.05
+  # bottleneck: 3
+classifier_args:
+  l2_weight_decay: 0.025
+  label_smoothing: null
+  learning_rate: 0.001
+fit_args:
+  batch_size: 16
+  epochs: 150
+  balance_method: "undersample"
+  train_log_interval: null
+use_gpu: False
+datasets:
+  clencher:
+    dataset_id: 1
+    name: "CogSci clencher"
+    toplevel: "./data_nn/"
+    filename_format: "grasp_{subject}_{session}_off5_raw"
+    tmin: -0.05
+    tlen: 0.3
+    data_min: -0.0248
+    data_max: 114
+    hpf: 8
+    lpf: 32
+    use_avg_ref: True
+    # notch_freq: 50
+    events:
+      114: "r"
+      110: "n"
+      108: "l"
+      #111: "o"
+      #113: "q"
+    picks:
+      - "C3"
+      - "C4"
+    split_args:
+      validation_fraction: 0.2

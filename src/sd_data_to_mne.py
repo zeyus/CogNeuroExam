@@ -1,11 +1,10 @@
 import os
+from pickle import FALSE
 import mne
 import numpy as np
 
-
-data_file = 'data/OBCI_1E.TXT'
-data_file_clean = 'data/OBCI_1E_clean.TXT'
-
+data_file = './OBCI_22_clean.TXT'
+data_file_clean = './src/text_OBCI_22_clean.TXT'
 
 sfreq = 1000 # Hz
 ch_types = ['eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'emg', 'eeg', 'eeg', 'stim']

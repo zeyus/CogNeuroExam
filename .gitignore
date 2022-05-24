@@ -1,6 +1,10 @@
 # data files
 data/*
 data_nn/*
+*.fif
+*.txt
+*.csv
+*.zip
 
 # VSCode
 .vscode/*
