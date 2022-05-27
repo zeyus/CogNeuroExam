@@ -1,18 +1,18 @@
 import logging
 from math import floor
 import threading
-from time import sleep
+from time import sleep, time_ns
+import sys
+from datetime import datetime
 from turtle import left
 from online.util import OnnxOnline, DN3D1010
 from eeg.eeg import EEG, Filtering, CytonSampleRate
 from psypy import config
 import numpy as np
-
-
+import pandas as pd
 
 # need to adjust this to print N meters, 1 per label, with range -1 to 1 that update with each prediction
 def printMeters(items, pad = 5, length = 30, fill = '█'):
-  
   n_items = len(items) # 3
   len_per_item = length # floor(length / n_items) # 30 / 3 = 10
   meter_out = '\r\033[s\033[0m'
@@ -41,11 +41,11 @@ window_samples = int(target_sr * sliding_win_size_seconds)
 sliding_step_samples = 1
 batch_size = 1
 data_scale_min = -0.0002
-data_scale_max = 114.0
+data_scale_max = 114.
 # data_scale_min = None
 # data_scale_max = None
 sleep_more = 0
-update_meters_every = 1
+update_meters_every = 5
 
 # order matters
 
@@ -56,7 +56,7 @@ ch_names = config.data.BCI_CHANNEL_NAMES
 ch_idx = config.data.BCI_CHANNEL_INDEXES
 # use_ch = ['P3', 'P4', 'C3', 'C4']
 # which channels we use to feed the model
-use_ch = ['C3', 'P3', 'C4', 'P4']
+use_ch = ['C3', 'C4', 'P3', 'P4']
 
 # index of all EEG channels (not EMG, stim, etc)
 eeg_ch_idx = [x for x in range(len(ch_types)) if ch_types[x] == 'eeg']
@@ -71,7 +71,8 @@ use_ch_idx = [x for x in range(len(eeg_ch_names)) if eeg_ch_names[x] in use_ch]
 
 # Load the ONNX model
 # model = onnx.load("trained_models/2022-05-08_21-38-01_EEGNetStridedOnnxCompat_a.onnx")
-model_path = "trained_models/2022-05-22_10-14-28_EEGNetStridedOnnxCompat_l.onnx"
+model_path = "trained_models/2022-05-24_17-41-06_EEGNetStridedOnnxCompat_l.onnx"
+
 
 # Check that the model is well formed
 # onnx.checker.check_model(model)
@@ -85,34 +86,15 @@ chmap = DN3D1010(ch_names, ch_types, use_ch_idx, data_scale_min, data_scale_max)
       # 113: "q"
       # 114: "r"
 # labels
-out_labels = ["Left+", "Neutral", "Right-", "Left-", "Right+"]
-
-#@todo: implement multithreading for collecting data so processing happens in parallel
-def collect_cont(streamer: EEG, stop_event: threading.Event, ready_event: threading.Event, participant: list, max_dur_mins: int = 60):
-    """
-    Collect brain data
-    """
-    ready_event.set()
-
-    # stop after recieving stop signal from main thread (experiment is over)
-    while not stop_event.is_set():
-        # sleep first for data in buffer
-        sleep(1)
-        # get data from buffer
-        bci_data = streamer.poll()
-        
-    # shutdown board's data stream
-    if streamer is not None:
-        streamer.stop()
-    
-    # trigger ready event to let main thread know data has been saved
-    ready_event.set()
-
+out_labels = ["Left", "Neutral", "Right"]
+script_run_dt = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+prediction_file = "output/predictions_{}.csv".format(script_run_dt)
+predictions = pd.DataFrame(columns = ['timestamp', 'start_sample'] + out_labels)
 # for now let's simulate data
 
 logging.info("Note, only changes in predictions will be printed out...")
 
-eeg_source = EEG(dummyBoard = True, emg_channels = [14])
+eeg_source = EEG(dummyBoard = True, emg_channels = [])
 eeg_source.start_stream(sdcard = False, sr = CytonSampleRate.SR_250)
 eeg_sr = eeg_source.sampling_rate
 sr_scale_factor = target_sr / eeg_sr
@@ -145,69 +127,87 @@ recent_preds = [
 ]
 preds_since_print = 0
 while True:
-  # ch_idx will get ALL channels
-  data_chunk = eeg_source.poll()[ch_idx, :]
-  data = np.concatenate((data, data_chunk), axis=1) # concat may be memory inefficient 
-  # if we have enough to start processing
-  if floor(sr_scale_factor * data.shape[1]) > window_samples:
-    # bandpass, then downsample
-    data_predict = eeg_filter.bandpass(data, 8, 32)
-    data_predict = eeg_filter.resample(data_predict.T, target_sr).T # this has GOT to be inefficient
-    # now subtract average signal of EEG channels from each channel
-    # this will also subtract from stim and EMG channels but who cares
-    # we're dropping that data anyway
-    data_predict = data_predict - np.mean(data_predict[eeg_ch_idx, :], axis=0)
+  try:
+    # ch_idx will get ALL channels
+    data_chunk = eeg_source.poll()[ch_idx, :]
+    data = np.concatenate((data, data_chunk), axis=1) # concat may be memory inefficient 
+    # if we have enough to start processing
+    if floor(sr_scale_factor * data.shape[1]) > window_samples:
+      # bandpass, then downsample
+      data_predict = eeg_filter.bandpass(data, 8, 32)
+      data_predict = eeg_filter.resample(data_predict.T, target_sr).T # this has GOT to be inefficient
+      # now subtract average signal of EEG channels from each channel
+      # this will also subtract from stim and EMG channels but who cares
+      # we're dropping that data anyway
+      # data_predict = data_predict - np.mean(data_predict[eeg_ch_idx, :], axis=0)
 
-    # now let's only get the channels we want
-    data_predict = chmap.zero_discard(data_predict)
+      # now let's only get the channels we want
+      data_predict = chmap.zero_discard(data_predict)
 
-    max_strides = floor((data_predict.shape[1] - window_samples) / sliding_step_samples)
-    leftover_samples = (data_predict.shape[1] - window_samples) % sliding_step_samples
-    # if leftover_samples > 0:
-    #   max_strides += 1
-    # logging.debug('Stride/window start time: {}, strides: {}'.format(sample_start_offset / target_sr, max_strides))
-    predicted_label = None
-    for stride in range(max_strides + 1):
-      stride_by = sliding_step_samples
-      # get the data for this stride
-      start_idx = stride * stride_by
-      # do NOT keep this hardcoded
-      # in fact, drop  useless channels earlier (we can't if we want average though...)
-      # even turn them off on board if possible.
-      data_stride = data_predict[:, start_idx:start_idx+window_samples]
-      data_stride = chmap(data_stride)
-      # fake batch for now, would be better to just batch all strides!
-      data_stride = np.expand_dims(data_stride, axis=0)
-      preds = model.predict(data_stride)
-      # no batch atm
-      preds = np.average(preds[0][0], axis=1)
-      pr_idx = preds.argmax()
-      recent_preds.pop(0)
-      recent_preds.append(pr_idx)
-      predicted_label = out_labels[pr_idx]
-      preds_since_print += 1
-      if not last_pred_label == predicted_label:
-        # logging.info("Prediction: {}".format(predicted_label))
-        # logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
-        last_pred_label = predicted_label
-      if preds_since_print >= update_meters_every:
-        printMeters([
-          (preds[0], -10, 10, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
-          (preds[3], -10, 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
-          (preds[1], -10, 10, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
-          (preds[4], -10, 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
-          (preds[2], -10, 10, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
-          (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
-        ], 10, 100)
-        preds_since_print = 0
-    
-    # for removing from original data
-    samples_completed = (data_predict.shape[1] - window_samples - leftover_samples)
-    sample_start_offset += samples_completed
-    slice_start = floor(samples_completed / sr_scale_factor)
-    del data_predict
-    del data_stride
-    # now remove data from original data
-    data = data[:, slice_start:]
-  # sleep at least long enough for next data chunk
-  sleep(sleep_more + (sliding_step_samples / target_sr))
+      max_strides = floor((data_predict.shape[1] - window_samples) / sliding_step_samples)
+      leftover_samples = (data_predict.shape[1] - window_samples) % sliding_step_samples
+      # if leftover_samples > 0:
+      #   max_strides += 1
+      # logging.debug('Stride/window start time: {}, strides: {}'.format(sample_start_offset / target_sr, max_strides))
+      predicted_label = None
+      for stride in range(max_strides + 1):
+        stride_by = sliding_step_samples
+        # get the data for this stride
+        start_idx = stride * stride_by
+        # do NOT keep this hardcoded
+        # in fact, drop  useless channels earlier (we can't if we want average though...)
+        # even turn them off on board if possible.
+        data_stride = data_predict[:, start_idx:start_idx+window_samples]
+        data_stride = chmap(data_stride)
+        # fake batch for now, would be better to just batch all strides!
+        data_stride = np.expand_dims(data_stride, axis=0)
+        preds = model.predict(data_stride)
+        predictions.loc[len(predictions)] = [time_ns(), sample_start_offset + start_idx, preds[0][0][0], preds[0][0][1], preds[0][0][2]]
+        preds = np.average(preds[0][0], axis=1)
+        # preds[0] += 4.20
+        # preds[1] += 0.1
+        # preds[2] += -4.20
+        # preds[0] += 3.00
+        # preds[1] += 0.6
+        # preds[2] -= 7.2
+        # print(preds.shape)
+        # print(preds)
+        # no batch atm
+        # 
+        pr_idx = preds.argmax()
+        recent_preds.pop(0)
+        recent_preds.append(pr_idx)
+        predicted_label = out_labels[pr_idx]
+        preds_since_print += 1
+        if not last_pred_label == predicted_label:
+          # logging.info("Prediction: {}".format(predicted_label))
+          # logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
+          last_pred_label = predicted_label
+        if preds_since_print >= update_meters_every:
+          # printMeters([
+          #   (preds[0], -50, 50, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
+          #   #(preds[3], 501050 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
+          #   (preds[1], -50, 50, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
+          #   #(preds[4], 501050 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
+          #   (preds[2], -50, 50, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+          #   (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
+          # ], 10, 100)
+          preds_since_print = 0
+      
+      # for removing from original data
+      samples_completed = (data_predict.shape[1] - window_samples - leftover_samples)
+      sample_start_offset += samples_completed
+      slice_start = floor(samples_completed / sr_scale_factor)
+      del data_predict
+      del data_stride
+      # now remove data from original data
+      data = data[:, slice_start:]
+    # sleep at least long enough for next data chunk
+    sleep(sleep_more + (sliding_step_samples / target_sr))
+    # DO THINGS
+  except KeyboardInterrupt:
+    # write predictions to file
+    predictions.to_csv(prediction_file, index=False)
+    # nicely close EEG connection
+    eeg_source.stop()
+    sys.exit()

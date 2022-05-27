@@ -4,26 +4,26 @@ Configuratron:
   deep1010: True
 model_args:
   #context_do: 0.15
-  do: 0.35
-  t_len: 12
-  D: 4
-  # stride_width: 2
-  F1: 16
-  F2: 64
+  do: 0.2
+  t_len: 14
+  D: 2
+  stride_width: 2
+  F1: 8
+  F2: 16
   # s_growth: 24
   # t_filters: 32
-  pooling: 7
+  pooling: 5
   # temp_layers: 8
   # spat_layers: 8
   # temp_span: 0.05
   # bottleneck: 3
 classifier_args:
-  l2_weight_decay: 0.20
+  l2_weight_decay: 0.025
   label_smoothing: null
   learning_rate: 0.001
 fit_args:
   batch_size: 16
-  epochs: 350
+  epochs: 200
   balance_method: "oversample"
   train_log_interval: null
 use_gpu: True
@@ -32,14 +32,14 @@ datasets:
     dataset_id: 1
     name: "CogSci clencher"
     toplevel: "./data_nn/"
-    filename_format: "grasp_{subject}_{session}_off_raw"
+    filename_format: "grasp_{subject}_{session}_raw"
     tmin: -0.05
-    tlen: 0.28
+    tlen: 0.30
     data_min: -0.0002
     data_max: 114.0
     hpf: 8
     lpf: 32
-    use_avg_ref: True
+    use_avg_ref: False
     # notch_freq: 50
     event_prep:
       do_not_run: True
@@ -60,10 +60,10 @@ datasets:
       # 115: "s" # special combo event type
     picks:
       - "C3"
-      - "P3"
       - "C4"
-      - "P4"
+      - 'P3'
+      - 'P4'
     split_args:
-      validation_fraction: 0.20
+      validation_fraction: 0.35
     
       

@@ -40,7 +40,7 @@ if __name__ == "__main__":
     model_name = ''
     def make_model_and_process():
         global model_name
-        nnm = EEGNetOnnxCompat.from_dataset(dataset, **experiment.model_args.as_dict())
+        nnm = EEGNetStridedOnnxCompat.from_dataset(dataset, **experiment.model_args.as_dict())
         model_name = type(nnm).__name__
         return StandardClassification(nnm, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
