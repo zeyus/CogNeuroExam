@@ -166,6 +166,13 @@ while True:
         # average over last dimensions
         while len(preds.shape) >= 3:
             preds = preds.mean(axis=-1)
+          
+        preds = np.exp(preds)/np.sum(np.exp(preds), axis=-1)
+        # print(preds)
+        # print(np.exp(preds))
+        # print(np.exp(preds)/np.sum(np.exp(preds), axis=-1))
+        # print(np.log(np.exp(preds)/np.sum(np.exp(preds), axis=-1)))
+        # exit()
         predictions.loc[len(predictions)] = [time_ns(), sample_start_offset + start_idx, preds[0][0], preds[0][1], preds[0][2]]
         #preds = np.average(preds[0][0], axis=1)
         
@@ -190,11 +197,11 @@ while True:
           last_pred_label = predicted_label
         if preds_since_print >= update_meters_every:
           printMeters([
-            (preds[0][0], -50, 50, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
+            (preds[0][0], 0, 1, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
             #(preds[3], 501050 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
-            (preds[0][1], -50, 50, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
+            (preds[0][1], 0, 1, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
             #(preds[4], 501050 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
-            (preds[0][2], -50, 50, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+            (preds[0][2], 0, 1, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
             (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
           ], 10, 100)
           preds_since_print = 0

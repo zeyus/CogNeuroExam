@@ -34,7 +34,7 @@ datasets:
     toplevel: "./data_nn/"
     filename_format: "grasp_{subject}_{session}_raw"
     tmin: -0.05
-    tlen: 4.0
+    tlen: 0.3
     data_min: -0.0248
     data_max: 114.0
     hpf: 8
