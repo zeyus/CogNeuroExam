@@ -1,13 +1,13 @@
 Configuratron:
-  sfreq: 64
+  sfreq:  100
   preload: True
   deep1010: True
 model_args:
   #context_do: 0.15
-  do: 0.09
-  t_len: 11
+  do: 0.2
+  t_len: 14
   D: 2
-  stride_width: 1
+  stride_width: 2
   F1: 8
   F2: 16
   # s_growth: 24
@@ -18,13 +18,13 @@ model_args:
   # temp_span: 0.05
   # bottleneck: 3
 classifier_args:
-  l2_weight_decay: 0.28
+  l2_weight_decay: 0.025
   label_smoothing: null
   learning_rate: 0.001
 fit_args:
-  batch_size: 6
-  epochs: 250
-  balance_method: "undersample"
+  batch_size: 16
+  epochs: 200
+  balance_method: "oversample"
   train_log_interval: null
 use_gpu: True
 datasets:
@@ -34,19 +34,35 @@ datasets:
     toplevel: "./data_nn/"
     filename_format: "grasp_{subject}_{session}_raw"
     tmin: -0.05
-    tlen: 0.25
-    data_min: 114.0
-    data_max: -0.0248
+    tlen: 4.0
+    data_min: -0.0248
+    data_max: 114.0
     hpf: 8
     lpf: 32
-    use_avg_ref: True
+    use_avg_ref: False
     # notch_freq: 50
+    event_prep:
+      do_not_run: True
+      off_events:
+        - 111
+        - 113
+      combine_events:
+        - 111
+        - 113
+      combined_event_id: 115
+      move_off_events_ms: 0
     events:
-      114: "r"
+      108: "l"
       110: "n"
+      #111: "o"
+      #113: "q"
+      114: "r"
+      # 115: "s" # special combo event type
     picks:
       - "C3"
-      - "P3"
+      - "C4"
+      - 'P3'
+      - 'P4'
     split_args:
       validation_fraction: 0.35
     

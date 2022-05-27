@@ -24,7 +24,7 @@ def printMeters(items, pad = 5, length = 30, fill = '█'):
     decorate = '\033[1;32m' if min < 0 and value > 0 else '' if min > 0 else '\033[1;31m'
     p_pos = (value - min) / (max - min) # (0.5 - -1) / (1 - -1) = 0.75
     pos = int(len_per_item * p_pos) # 10 * 0.75 = 7.5 -> 7
-    val = ("{:5.2f}").format(value)
+    val = ("{:6.2f}").format(value)
     bar = '-' * (pos-1) + decorate + fill + reset + '-' * (len_per_item - pos)
     prefix = prefix.rjust(13)
     meter_out += f'\r\033[1B ‖ {prefix} |{bar}| {decorate}{val}{reset} ‖ {suffix}'
@@ -90,9 +90,8 @@ out_labels = ["Left", "Neutral", "Right"]
 script_run_dt = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 prediction_file = "output/predictions_{}.csv".format(script_run_dt)
 predictions = pd.DataFrame(columns = ['timestamp', 'start_sample'] + out_labels)
-# for now let's simulate data
 
-logging.info("Note, only changes in predictions will be printed out...")
+
 
 eeg_source = EEG(dummyBoard = True, emg_channels = [])
 eeg_source.start_stream(sdcard = False, sr = CytonSampleRate.SR_250)
@@ -162,8 +161,14 @@ while True:
         # fake batch for now, would be better to just batch all strides!
         data_stride = np.expand_dims(data_stride, axis=0)
         preds = model.predict(data_stride)
-        predictions.loc[len(predictions)] = [time_ns(), sample_start_offset + start_idx, preds[0][0][0], preds[0][0][1], preds[0][0][2]]
-        preds = np.average(preds[0][0], axis=1)
+        if isinstance(preds, (list, tuple)):
+            preds = preds[0]
+        # average over last dimensions
+        while len(preds.shape) >= 3:
+            preds = preds.mean(axis=-1)
+        predictions.loc[len(predictions)] = [time_ns(), sample_start_offset + start_idx, preds[0][0], preds[0][1], preds[0][2]]
+        #preds = np.average(preds[0][0], axis=1)
+        
         # preds[0] += 4.20
         # preds[1] += 0.1
         # preds[2] += -4.20
@@ -174,7 +179,7 @@ while True:
         # print(preds)
         # no batch atm
         # 
-        pr_idx = preds.argmax()
+        pr_idx = int(preds.argmax(axis=-1).mean().item())
         recent_preds.pop(0)
         recent_preds.append(pr_idx)
         predicted_label = out_labels[pr_idx]
@@ -184,14 +189,14 @@ while True:
           # logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
           last_pred_label = predicted_label
         if preds_since_print >= update_meters_every:
-          # printMeters([
-          #   (preds[0], -50, 50, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
-          #   #(preds[3], 501050 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
-          #   (preds[1], -50, 50, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
-          #   #(preds[4], 501050 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
-          #   (preds[2], -50, 50, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
-          #   (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
-          # ], 10, 100)
+          printMeters([
+            (preds[0][0], -50, 50, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
+            #(preds[3], 501050 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
+            (preds[0][1], -50, 50, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
+            #(preds[4], 501050 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
+            (preds[0][2], -50, 50, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+            (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
+          ], 10, 100)
           preds_since_print = 0
       
       # for removing from original data
