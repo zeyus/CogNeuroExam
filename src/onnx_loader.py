@@ -1,10 +1,8 @@
 import logging
 from math import floor
-import threading
 from time import sleep, time_ns
 import sys
 from datetime import datetime
-from turtle import left
 from online.util import OnnxOnline, DN3D1010
 from eeg.eeg import EEG, Filtering, CytonSampleRate
 from psypy import config
@@ -18,12 +16,12 @@ def printMeters(items, pad = 5, length = 30, fill = '█'):
   meter_out = '\r\033[s\033[0m'
   reset = '\033[0m'
   print(f'\033[{n_items}A', end = '')
-  for value, min, max, prefix, selected, n_recent in items: # (0.5, -1, 1, '', '')
+  for value, minv, maxv, prefix, selected, n_recent in items: # (0.5, -1, 1, '', '')
     suffix = '\033[1;96m{}\033[0m' if selected  else '{}'
     suffix = suffix.format(('*' * n_recent).ljust(pad))
-    decorate = '\033[1;32m' if min < 0 and value > 0 else '' if min > 0 else '\033[1;31m'
-    p_pos = (value - min) / (max - min) # (0.5 - -1) / (1 - -1) = 0.75
-    pos = int(len_per_item * p_pos) # 10 * 0.75 = 7.5 -> 7
+    decorate = '\033[1;32m' if maxv > 0 and value > 0.5 else '' if maxv <= 0 else '\033[1;31m'
+    p_pos = (value - minv) / (maxv - minv) # (0.5 - -1) / (1 - -1) = 0.75
+    pos = max(int(len_per_item * p_pos), 1) # 10 * 0.75 = 7.5 -> 7
     val = ("{:6.2f}").format(value)
     bar = '-' * (pos-1) + decorate + fill + reset + '-' * (len_per_item - pos)
     prefix = prefix.rjust(13)
@@ -34,18 +32,22 @@ logging.basicConfig()
 # set to logging.INFO if you want to see less debugging output
 logging.getLogger().setLevel(logging.DEBUG)
 
-target_sr = 100
-sliding_win_size_seconds = 0.3
+target_sr = 128
+sliding_win_size_seconds = 0.8
 window_samples = int(target_sr * sliding_win_size_seconds)
 # our striding will depend on perfomance of inference
 sliding_step_samples = 1
 batch_size = 1
-data_scale_min = -0.0002
-data_scale_max = 114.
+# match what we've seen in training
+# this could be optimized
+data_scale_min = -0.0927
+data_scale_max = 0.1875
+filter_buffer_size = 0 # int(target_sr * 0.5)
 # data_scale_min = None
 # data_scale_max = None
 sleep_more = 0
 update_meters_every = 5
+d1010 = False
 
 # order matters
 
@@ -71,8 +73,12 @@ use_ch_idx = [x for x in range(len(eeg_ch_names)) if eeg_ch_names[x] in use_ch]
 
 # Load the ONNX model
 # model = onnx.load("trained_models/2022-05-08_21-38-01_EEGNetStridedOnnxCompat_a.onnx")
-model_path = "trained_models/2022-05-24_17-41-06_EEGNetStridedOnnxCompat_l.onnx"
+model_path = "trained_models/2022-05-30_12-01-34_EEGNetOnnxCompat_a.onnx"
+requires_bp = False
+log_results = False
+softmax = True
 
+prediction_scale = [0, 1] if softmax else [-50, 50]
 
 # Check that the model is well formed
 # onnx.checker.check_model(model)
@@ -86,14 +92,15 @@ chmap = DN3D1010(ch_names, ch_types, use_ch_idx, data_scale_min, data_scale_max)
       # 113: "q"
       # 114: "r"
 # labels
-out_labels = ["Left", "Neutral", "Right"]
+# out_labels = ["Left", "Neutral", "Right"]
+out_labels = ["Neutral", "Right"]
 script_run_dt = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 prediction_file = "output/predictions_{}.csv".format(script_run_dt)
 predictions = pd.DataFrame(columns = ['timestamp', 'start_sample'] + out_labels)
 
 
 
-eeg_source = EEG(dummyBoard = True, emg_channels = [])
+eeg_source = EEG(dummyBoard = False)
 eeg_source.start_stream(sdcard = False, sr = CytonSampleRate.SR_250)
 eeg_sr = eeg_source.sampling_rate
 sr_scale_factor = target_sr / eeg_sr
@@ -103,7 +110,7 @@ logging.info("Using channels: {}".format(use_ch))
 logging.info("Predicting every {} samples (every {}ms)".format(sliding_step_samples, sliding_step_samples / target_sr * 1000))
 logging.info("Sample rates: - Source: {}, - Target: {}".format(eeg_sr, target_sr))
 eeg_filter = Filtering(use_ch_idx, eeg_sr)
-sleep(sliding_win_size_seconds)
+sleep(max(sliding_win_size_seconds, filter_buffer_size))
 last_pred_label = None
 # need to change this to a buffer system
 data = np.zeros((len(ch_idx), 0))
@@ -133,15 +140,22 @@ while True:
     # if we have enough to start processing
     if floor(sr_scale_factor * data.shape[1]) > window_samples:
       # bandpass, then downsample
-      data_predict = eeg_filter.bandpass(data, 8, 32)
-      data_predict = eeg_filter.resample(data_predict.T, target_sr).T # this has GOT to be inefficient
+      # might consider bessel or chebychev
+      if requires_bp:
+        data_predict = eeg_filter.bandpass(data, 8, 32)
+        data_predict = eeg_filter.resample(data_predict.T, target_sr).T # this has GOT to be inefficient
+      else:
+        data_predict = eeg_filter.resample(data.T, target_sr).T
       # now subtract average signal of EEG channels from each channel
       # this will also subtract from stim and EMG channels but who cares
       # we're dropping that data anyway
       # data_predict = data_predict - np.mean(data_predict[eeg_ch_idx, :], axis=0)
 
       # now let's only get the channels we want
-      data_predict = chmap.zero_discard(data_predict)
+      if d1010:
+        data_predict = chmap.zero_discard(data_predict)
+      else:
+        data_predict = data_predict[use_ch_idx, :]
 
       max_strides = floor((data_predict.shape[1] - window_samples) / sliding_step_samples)
       leftover_samples = (data_predict.shape[1] - window_samples) % sliding_step_samples
@@ -157,28 +171,34 @@ while True:
         # in fact, drop  useless channels earlier (we can't if we want average though...)
         # even turn them off on board if possible.
         data_stride = data_predict[:, start_idx:start_idx+window_samples]
-        data_stride = chmap(data_stride)
+        if d1010:
+          data_stride = chmap(data_stride)
         # fake batch for now, would be better to just batch all strides!
         data_stride = np.expand_dims(data_stride, axis=0)
         preds = model.predict(data_stride)
+        #print(preds)
         if isinstance(preds, (list, tuple)):
             preds = preds[0]
+        # print(preds)
         # average over last dimensions
         while len(preds.shape) >= 3:
             preds = preds.mean(axis=-1)
-          
-        preds = np.exp(preds)/np.sum(np.exp(preds), axis=-1)
+        #print(preds)
+        # if softmax:
+        #   preds = np.exp(preds)/np.sum(np.exp(preds), axis=-1)
         # print(preds)
         # print(np.exp(preds))
         # print(np.exp(preds)/np.sum(np.exp(preds), axis=-1))
         # print(np.log(np.exp(preds)/np.sum(np.exp(preds), axis=-1)))
+        # eeg_source.stop()
         # exit()
-        predictions.loc[len(predictions)] = [time_ns(), sample_start_offset + start_idx, preds[0][0], preds[0][1], preds[0][2]]
+        if log_results:
+          predictions.loc[len(predictions)] = [time_ns(), sample_start_offset + start_idx, preds[0][0], preds[0][1], preds[0][2]]
         #preds = np.average(preds[0][0], axis=1)
         
-        # preds[0] += 4.20
-        # preds[1] += 0.1
-        # preds[2] += -4.20
+        #preds[0][0] += 10
+        #preds[0][1] += 3
+        # preds[0][2] += -12.1
         # preds[0] += 3.00
         # preds[1] += 0.6
         # preds[2] -= 7.2
@@ -187,6 +207,10 @@ while True:
         # no batch atm
         # 
         pr_idx = int(preds.argmax(axis=-1).mean().item())
+        # print(preds)
+        # print(pr_idx)
+        # eeg_source.stop()
+        # exit()
         recent_preds.pop(0)
         recent_preds.append(pr_idx)
         predicted_label = out_labels[pr_idx]
@@ -196,14 +220,15 @@ while True:
           # logging.info(f'r:{preds[0]}, n:{preds[1]}, l:{preds[2]}')
           last_pred_label = predicted_label
         if preds_since_print >= update_meters_every:
-          printMeters([
-            (preds[0][0], 0, 1, out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
-            #(preds[3], 501050 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
-            (preds[0][1], 0, 1, out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
-            #(preds[4], 501050 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
-            (preds[0][2], 0, 1, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
-            (sr_scale_factor * data.shape[1] / target_sr, 5, 0, "Latency (s)", False, 0),
-          ], 10, 100)
+          if not log_results:
+            printMeters([
+              (preds[0][0], prediction_scale[0], prediction_scale[1], out_labels[0], out_labels[0] == predicted_label, recent_preds.count(0)),
+              #(preds[3], 501050 10, out_labels[3], out_labels[3] == predicted_label, recent_preds.count(3)),
+              (preds[0][1], prediction_scale[0], prediction_scale[1], out_labels[1], out_labels[1] == predicted_label, recent_preds.count(1)),
+              #(preds[4], 501050 10, out_labels[4], out_labels[4] == predicted_label, recent_preds.count(4)),
+              # (preds[0][2], -20, 20, out_labels[2], out_labels[2] == predicted_label, recent_preds.count(2)),
+              ((sr_scale_factor * data.shape[1] / target_sr)*-1.0, 0, -10, "Latency (s)", False, 0),
+            ], 10, 100)
           preds_since_print = 0
       
       # for removing from original data
@@ -219,7 +244,8 @@ while True:
     # DO THINGS
   except KeyboardInterrupt:
     # write predictions to file
-    predictions.to_csv(prediction_file, index=False)
+    if log_results:
+      predictions.to_csv(prediction_file, index=False)
     # nicely close EEG connection
     eeg_source.stop()
     sys.exit()

@@ -28,8 +28,9 @@ if __name__ == "__main__":
     ds_config.add_custom_raw_loader(custom_raw_loader)
 
     dataset = ds_config.auto_construct_dataset()
+    d1010 = experiment.experiment.get('deep1010', True)
     if isinstance(ds_config.data_min, bool) or isinstance(ds_config.data_max, bool):
-        if experiment.experiment.get('deep1010', True):
+        if d1010:
             print("Cannot calculate data range with deep1010 enabled, please set to false, calculate then set to true again.")
             exit()
         dr = get_dataset_max_and_min(dataset)
@@ -40,7 +41,9 @@ if __name__ == "__main__":
     model_name = ''
     def make_model_and_process():
         global model_name
-        nnm = EEGNetStridedOnnxCompat.from_dataset(dataset, **experiment.model_args.as_dict())
+        #nnm = EEGNetOnnxCompat.from_dataset(dataset, **experiment.model_args.as_dict())
+        #nnm = TIDNet.from_dataset(dataset, **experiment.model_args.as_dict())
+        nnm = BENDRClassifier.from_dataset(dataset, **experiment.model_args.as_dict())
         model_name = type(nnm).__name__
         return StandardClassification(nnm, cuda=experiment.use_gpu, **experiment.classifier_args.as_dict())
 
@@ -70,12 +73,13 @@ if __name__ == "__main__":
         torch_model = process.classifier
         torch_model.eval()
         # m_kwa = experiment.model_args.as_dict()
+        n_ch = 90 if d1010 else len(ds_config.picks)
         onnx_file = "trained_models/{}_{}_{}.onnx".format(cur_date, model_name, subject_name)
         print("Exporting ONNX model to: {}".format(onnx_file))
         torch.onnx.export(
             model=torch_model,
             # (batches, channels, n_samples)
-            args=torch.randn(6, 90, round(ds_config.tlen * experiment.global_sfreq), device=device),
+            args=torch.randn(experiment.fit_args.batch_size, n_ch, round(ds_config.tlen * experiment.global_sfreq), device=device),
             f=onnx_file,
             export_params=True,
             opset_version=16, #15, # 16 is latest but deepsparse dev currently support <=15

@@ -496,7 +496,7 @@ class Filtering(object):
           FilterTypes.BUTTERWORTH.value, 0)
     return data
   
-  def bandpass(self, data: NDArray[Float64], lowcut = 1.0, highcut = 49.0, order = 4) -> NDArray[Float64]:
+  def bandpass(self, data: NDArray[Float64], lowcut = 1.0, highcut = 49.0, order = 3) -> NDArray[Float64]:
     c_freq = lowcut + ((highcut - lowcut) / 2)
     bw = (highcut - lowcut)
     for _, channel in enumerate(self.exg_channels):

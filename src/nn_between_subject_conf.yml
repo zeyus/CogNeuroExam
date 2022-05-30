@@ -1,30 +1,52 @@
 Configuratron:
-  sfreq:  100
+  sfreq:  128
   preload: True
-  deep1010: True
+  deep1010: False
 model_args:
-  #context_do: 0.15
-  do: 0.2
-  t_len: 14
+  ## eegnet
+
+  do: 0.3
+  t_len: 32
   D: 2
-  stride_width: 2
-  F1: 8
-  F2: 16
+  F1: 16
+  F2: 32
+  pooling: 4
+
+  ## + eegnet strided
+
+  #stride_width: 2
+  
+  ## TIDNet
+  # do: 0.4
+  # pooling: 20
   # s_growth: 24
   # t_filters: 32
-  pooling: 5
-  # temp_layers: 8
-  # spat_layers: 8
+  # temp_layers: 2
+  # spat_layers: 2
   # temp_span: 0.05
   # bottleneck: 3
+
+  ## BENDR
+  # encoder_h: 256
+  # encoder_do: 0.0
+  # hidden_feedforward: 3076
+  # heads: 8
+  # context_layers: 8
+  # context_do: 0.15
+  # position_encoder: 25
+  # layer_drop: 0.0
+  # mask_p_t: 0.1
+  # mask_p_c: 0.004
+  # mask_t_span: 6
+
 classifier_args:
-  l2_weight_decay: 0.025
+  l2_weight_decay: 0.01
   label_smoothing: null
-  learning_rate: 0.001
+  learning_rate: 0.01
 fit_args:
-  batch_size: 16
-  epochs: 200
-  balance_method: "oversample"
+  batch_size: 24
+  epochs: 500
+  balance_method: "undersample"
   train_log_interval: null
 use_gpu: True
 datasets:
@@ -33,12 +55,12 @@ datasets:
     name: "CogSci clencher"
     toplevel: "./data_nn/"
     filename_format: "grasp_{subject}_{session}_raw"
-    tmin: -0.05
-    tlen: 0.3
-    data_min: -0.0248
-    data_max: 114.0
-    hpf: 8
-    lpf: 32
+    tmin: -0.08
+    tlen: 0.8
+    data_min: -0.0105
+    data_max: 0.1875
+    # hpf: 8
+    # lpf: 32
     use_avg_ref: False
     # notch_freq: 50
     event_prep:
@@ -52,18 +74,35 @@ datasets:
       combined_event_id: 115
       move_off_events_ms: 0
     events:
-      108: "l"
+      # 108: "l"
       110: "n"
       #111: "o"
       #113: "q"
       114: "r"
       # 115: "s" # special combo event type
+    exclude_channels:
+      - Fp1
+      - Fp2
+      - F7
+      - F8
+      - F3
+      - F4
+      - T7
+      - T8
+      - P7
+      - P8
+      - O1
+      - O2
+      - EMG1
+      - EX1
     picks:
       - "C3"
       - "C4"
       - 'P3'
       - 'P4'
+      # - 'F3'
+      # - 'F4'
     split_args:
-      validation_fraction: 0.35
+      validation_fraction: 0.2
     
       

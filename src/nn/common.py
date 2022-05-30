@@ -6,7 +6,9 @@ from pathlib import Path
 from datetime import datetime
 from dn3.configuratron import DatasetConfig
 from dn3.trainable.models import EEGNetStrided, EEGNet
+from dn3.trainable.layers import Flatten
 import numpy as np
+from torch import nn
 
 
 mne_set_config('MNE_STIM_CHANNEL', 'STI101')
@@ -84,6 +86,12 @@ class EEGNetOnnxCompat(EEGNet):
 
     def features_forward(self, x, *args, **kwargs):
         return super().features_forward(x)
+    
+    def make_new_classification_layer(self):
+        classifier = nn.Linear(self.num_features_for_classification, self.targets)
+        nn.init.xavier_normal_(classifier.weight)
+        classifier.bias.data.zero_()
+        self.classifier = nn.Sequential(Flatten(), classifier, nn.Softmax(dim=-1))
 
     # @classmethod
     # def from_dataset(cls, *args, **kwargs):
