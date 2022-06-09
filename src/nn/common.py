@@ -9,6 +9,7 @@ from dn3.trainable.models import EEGNetStrided, EEGNet
 from dn3.trainable.layers import Flatten
 import numpy as np
 from torch import nn
+from nebulgym.decorators.torch_decorators import accelerate_model, accelerate_dataset
 
 
 mne_set_config('MNE_STIM_CHANNEL', 'STI101')
@@ -68,6 +69,7 @@ def write_model_results(model_info, results):
             f.write(f'Best accuracy: {best_accuracy}\n')
             f.write('\n')
 
+@accelerate_model()
 class EEGNetStridedOnnxCompat(EEGNetStrided):
     # def __init__(self, *args, **kwargs):
     #     super(EEGNetStrided, self).__init__(*args, **kwargs)
@@ -79,7 +81,7 @@ class EEGNetStridedOnnxCompat(EEGNetStrided):
     # def from_dataset(cls, *args, **kwargs):
     #     return super(EEGNetStrided, cls).from_dataset(*args, **kwargs)
 
-
+@accelerate_model()
 class EEGNetOnnxCompat(EEGNet):
     # def __init__(self, *args, **kwargs):
     #     super(EEGNetStrided, self).__init__(*args, **kwargs)
